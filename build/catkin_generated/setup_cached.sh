@@ -1,0 +1,13 @@
+#!/usr/bin/env sh
+# generated from catkin/python/catkin/environment_cache.py
+
+# based on a snapshot of the environment before and after calling the setup script
+# it emulates the modifications of the setup script without recurring computations
+
+# new environment variables
+
+# modified environment variables
+export CMAKE_PREFIX_PATH="/root/catkin_ws/ardupilot_ws/src/dro/devel:$CMAKE_PREFIX_PATH"
+export PATH='/opt/ros/melodic/bin:/usr/lib/ccache:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/root/catkin_ws/ardupilot_ws/src/ardupilot/Tools/autotest:/root/catkin_ws/ardupilot_ws/src/gcc-arm-none-eabi-10-2020-q4-major/bin:/root/catkin_ws/ardupilot_ws/src/arm-gnu-toolchain-11.3.rel1-darwin-x86_64-arm-none-eabi/bin'
+export PWD='/root/catkin_ws/ardupilot_ws/src/dro/build'
+export ROS_PACKAGE_PATH="/root/catkin_ws/ardupilot_ws/src/dro/src:$ROS_PACKAGE_PATH"

@@ -1,0 +1,2 @@
+.
+-DCATKIN_DEVEL_PREFIX=/root/catkin_ws/ardupilot_ws/src/dro/devel -DCMAKE_INSTALL_PREFIX=/root/catkin_ws/ardupilot_ws/src/dro/install -G Unix Makefiles
