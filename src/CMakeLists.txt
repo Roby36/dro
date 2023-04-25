@@ -13,8 +13,10 @@ catkin_package()
 
 include_directories(include ${catkin_INCLUDE_DIRS})
 
-add_executable(Dro dro.cpp)
+add_executable(JController JController.cpp)
+add_executable(blBroadcaster blBroadcaster.cpp)
 
-target_link_libraries(Dro ${catkin_LIBRARIES} ncurses)
-target_link_libraries(Dro ${ncurses++_LIBRARIES}) ## keyboard_mover
-add_dependencies(Dro ${catkin_EXPORTED_TARGETS} Dro) ## keyboard_mover
+target_link_libraries(JController ${catkin_LIBRARIES} ncurses)
+target_link_libraries(blBroadcaster ${catkin_LIBRARIES})
+target_link_libraries(JController ${ncurses++_LIBRARIES}) ## keyboard_mover
+add_dependencies(JController ${catkin_EXPORTED_TARGETS} JController) ## keyboard_mover

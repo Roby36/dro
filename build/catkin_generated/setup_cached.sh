@@ -8,6 +8,8 @@
 
 # modified environment variables
 export CMAKE_PREFIX_PATH="/root/catkin_ws/ardupilot_ws/src/dro/devel:$CMAKE_PREFIX_PATH"
+export LD_LIBRARY_PATH="/root/catkin_ws/ardupilot_ws/src/dro/devel/lib:$LD_LIBRARY_PATH"
 export PATH='/opt/ros/melodic/bin:/usr/lib/ccache:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/root/catkin_ws/ardupilot_ws/src/ardupilot/Tools/autotest:/root/catkin_ws/ardupilot_ws/src/gcc-arm-none-eabi-10-2020-q4-major/bin:/root/catkin_ws/ardupilot_ws/src/arm-gnu-toolchain-11.3.rel1-darwin-x86_64-arm-none-eabi/bin'
+export PKG_CONFIG_PATH="/root/catkin_ws/ardupilot_ws/src/dro/devel/lib/pkgconfig:$PKG_CONFIG_PATH"
 export PWD='/root/catkin_ws/ardupilot_ws/src/dro/build'
 export ROS_PACKAGE_PATH="/root/catkin_ws/ardupilot_ws/src/dro/src:$ROS_PACKAGE_PATH"

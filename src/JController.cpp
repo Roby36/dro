@@ -1,12 +1,12 @@
 
 #include <ros/ros.h> 
 #include <geometry_msgs/TwistStamped.h>
-#include <nav_msgs/Odometry.h>
 #include <mavros_msgs/SetMode.h>
 #include <mavros_msgs/CommandBool.h>
 #include <mavros_msgs/CommandTOL.h>
 #include <tf/transform_datatypes.h>
 #include <tf/tf.h>
+#include <tf/transform_listener.h>
 
 #include <string> 
 #include <iostream>
@@ -47,7 +47,7 @@ enum Keypress {
     QUIT      = 'q'
 };
 
-class Dro
+class JController
 {
     /* PUBLISHERS */
     ros::Publisher cmd_vel_pub;
@@ -59,8 +59,8 @@ class Dro
     ros::ServiceClient land_srv;
 
     /* TRANSFORMER & TRANSFORMS */
-    tf::Transformer      my_transformer;
-    tf::StampedTransform bl_to_odom_transform; 
+    tf::TransformListener listener;
+    tf::StampedTransform  blo_to_odom_transform; 
 
     /* DRONE DEFAULT VELOCITIES */
     const double linearX;
@@ -72,7 +72,7 @@ class Dro
 
     public:
     /* Constructor */
-    Dro(ros::NodeHandle* nh,
+    JController(ros::NodeHandle* nh,
         double lx = 0.5, double ly = 0.5, double lz = 0.5,
         double ax = 0.5, double ay = 0.5, double az = 0.5)
         : linearX(lx), linearY(ly), linearZ(lz), angularX(ax), angularY(ay), angularZ(az)
@@ -93,21 +93,24 @@ class Dro
                        double ax = 0.0, double ay = 0.0, double az = 0.0)
     {
         geometry_msgs::TwistStamped msg;
-            /*
-            // Update transform from base_link to odom
-            my_transformer.lookupTransform("odom", "base_link", ros::Time::now(), this->bl_to_odom_transform);
-            // Use updated transform to set message parameters with respect to odom
-            tf::Vector3 lt = this->bl_to_odom_transform(tf::Vector3(lx, ly, lz));
-            tf::Vector3 at = this->bl_to_odom_transform(tf::Vector3(ax, ay, az));
-            */
-        msg.twist.linear.x  = lx;   // lt.getX();
-        msg.twist.linear.y  = ly;   // lt.getY();
-        msg.twist.linear.z  = lz;   // lt.getZ();
-        msg.twist.angular.x = ax;   // at.getX();
-        msg.twist.angular.y = ay;   // at.getY();
-        msg.twist.angular.z = az;   // at.getZ();
+        // Update transform from base_link_orientation to odom
+        try {
+            listener.lookupTransform("odom", "base_link_orientation", ros::Time(0), this->blo_to_odom_transform);
+        } catch (tf::TransformException &ex) {
+            ROS_ERROR("%s",ex.what());
+            return;
+        }
+        // Use updated transform to set message parameters with respect to odom
+        tf::Vector3 lt = this->blo_to_odom_transform(tf::Vector3(lx, ly, lz));
+        tf::Vector3 at = this->blo_to_odom_transform(tf::Vector3(ax, ay, az));
+        msg.twist.linear.x  = lt.getX();
+        msg.twist.linear.y  = lt.getY();
+        msg.twist.linear.z  = lt.getZ();
+        msg.twist.angular.x = at.getX();
+        msg.twist.angular.y = at.getY();
+        msg.twist.angular.z = at.getZ();
         // Set message header and publish message
-        msg.header.frame_id = "base_link";
+        msg.header.frame_id = "odom";
         msg.header.stamp    =  ros::Time::now();
         this->cmd_vel_pub.publish(msg);
     }
@@ -229,23 +232,23 @@ class Dro
 /* MAIN */
 int main(int argc, char** argv)
 {
-    ros::init(argc, argv, "Drodemo");    
+    ros::init(argc, argv, "JController");    
     ros::NodeHandle nh;                       
     sleep(2);                            
-    Dro* Dro = new ::Dro(&nh); 
+    JController* JController = new ::JController(&nh); 
 
-    Dro->reqMode(MAV_MODE_PREFLIGHT, "GUIDED");
-    Dro->reqArming(true);
-    Dro->reqTakeoff(0, 0, 0, 0, 2);
+    JController->reqMode(MAV_MODE_PREFLIGHT, "GUIDED");
+    JController->reqArming(true);
+    JController->reqTakeoff(0, 0, 0, 0, 2);
     sleep(10);  // sleep to give takeoff time to execute
 
-    Dro->handleKeypress(100); // enter manual flight until user presses 'q'
+    JController->handleKeypress(100); // enter manual flight until user presses 'q'
 
-    Dro->reqLand(0, 0, 0, 0, 0);
-    sleep(30);  // sleep to give landing time to execute
-    Dro->reqArming(false);  // Llanding command already takes care of disarming
+    JController->reqLand(0, 0, 0, 0, 0);
+    sleep(15);  // sleep to give landing time to execute
+    JController->reqArming(false);  // Llanding command already takes care of disarming
 
-    delete(Dro);                              
+    delete(JController);                              
 }
 
 
