@@ -7,9 +7,8 @@
 class DSocket
 {
     protected:
-
+    
     FILE* lfp;
-    const int port;
     int listen_fd = 0;
     struct sockaddr_in serv_addr;
 
@@ -18,6 +17,7 @@ class DSocket
     DSocket(int port = SERVERPORT, FILE* lfp = stdout) 
     : port(port), lfp(lfp) {}
 
+    const int port;
     virtual bool init() = 0;
 
     ~DSocket() { close(listen_fd); }

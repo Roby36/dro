@@ -32,23 +32,43 @@ class ServerSocket : public DSocket
         return true;
     }
 
-    void msg_loop()
+    /*** IMPORTANT: the buffer returned must be malloc'd if needed, ***/
+    /*** since this function zeroes it out each time ******************/
+    char* msg_wait()
     {
-        fprintf(lfp, "Waiting on port %d \n", port);
-        fflush(stdout);
-        for (;;) {
-            // Zero out buffer to ensure null-terminated
-            memset(buffer, 0, MAXLINE);
-            // Store incoming message in buffer
-            socklen_t len = sizeof(client_addr);
-            int m_size = recvfrom(listen_fd, (char*) buffer, MAXLINE, 0, 
-                                  (struct sockaddr*) &client_addr, &len);
-            if (m_size > 0) {
-                fprintf(lfp, " Got message: %s\n", buffer);
-            } else {
-                fprintf(lfp, "recv error %d\n", errno);
-            }
+        // Zero out buffer to ensure null-terminated
+        memset(buffer, 0, MAXLINE);
+        // Store incoming message in buffer
+        socklen_t len = sizeof(client_addr);
+        int m_size = recvfrom(listen_fd, (char*) buffer, MAXLINE, 0, 
+                                (struct sockaddr*) &client_addr, &len);
+        if (m_size > 0) {
+            fprintf(lfp, " Got message: %s\n", buffer);
+        } else {
+            fprintf(lfp, "recv error %d\n", errno);
         }
+        return buffer; 
     }
 };
+
+
+
+/*** UNIT-TEST ***/
+#ifdef SOCKSERV
+
+int main() {
+    ServerSocket* serv_sock = new ServerSocket(ROSPORT);
+    if (serv_sock->init()) {
+        fprintf(stdout, "Waiting on port %d \n", serv_sock->port);
+        fflush(stdout);
+        char cmd;
+        for (;;) {
+            cmd = *serv_sock->msg_wait();
+            fprintf(stdout, "Got command %c", cmd);
+        }
+    }
+    return 0;
+}
+
+#endif // SOCKSERV
 

@@ -16,9 +16,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
+#include <string.h>
 #include <unistd.h>
 
-#define MAXLINE 16
+#define MAXLINE    16
 #define SERVERPORT 7777
+#define ROSPORT    7778
 
 #endif  // _SOCKETCOMMON_H_

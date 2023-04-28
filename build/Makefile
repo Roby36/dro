@@ -1104,6 +1104,19 @@ tf2_msgs_generate_messages_nodejs/fast:
 .PHONY : tf2_msgs_generate_messages_nodejs/fast
 
 #=============================================================================
+# Target rules for targets named JControllerServer
+
+# Build rule for target.
+JControllerServer: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 JControllerServer
+.PHONY : JControllerServer
+
+# fast build rule for target.
+JControllerServer/fast:
+	$(MAKE) -f CMakeFiles/JControllerServer.dir/build.make CMakeFiles/JControllerServer.dir/build
+.PHONY : JControllerServer/fast
+
+#=============================================================================
 # Target rules for targets named gmock_main
 
 # Build rule for target.
@@ -1182,6 +1195,33 @@ JController.cpp.s:
 	$(MAKE) -f CMakeFiles/JController.dir/build.make CMakeFiles/JController.dir/JController.cpp.s
 .PHONY : JController.cpp.s
 
+JControllerServer.o: JControllerServer.cpp.o
+
+.PHONY : JControllerServer.o
+
+# target to build an object file
+JControllerServer.cpp.o:
+	$(MAKE) -f CMakeFiles/JControllerServer.dir/build.make CMakeFiles/JControllerServer.dir/JControllerServer.cpp.o
+.PHONY : JControllerServer.cpp.o
+
+JControllerServer.i: JControllerServer.cpp.i
+
+.PHONY : JControllerServer.i
+
+# target to preprocess a source file
+JControllerServer.cpp.i:
+	$(MAKE) -f CMakeFiles/JControllerServer.dir/build.make CMakeFiles/JControllerServer.dir/JControllerServer.cpp.i
+.PHONY : JControllerServer.cpp.i
+
+JControllerServer.s: JControllerServer.cpp.s
+
+.PHONY : JControllerServer.s
+
+# target to generate assembly for a file
+JControllerServer.cpp.s:
+	$(MAKE) -f CMakeFiles/JControllerServer.dir/build.make CMakeFiles/JControllerServer.dir/JControllerServer.cpp.s
+.PHONY : JControllerServer.cpp.s
+
 blBroadcaster.o: blBroadcaster.cpp.o
 
 .PHONY : blBroadcaster.o
@@ -1216,6 +1256,7 @@ help:
 	@echo "... clean"
 	@echo "... depend"
 	@echo "... install/strip"
+	@echo "... install/local"
 	@echo "... uuid_msgs_generate_messages_eus"
 	@echo "... geographic_msgs_generate_messages_eus"
 	@echo "... geographic_msgs_generate_messages_nodejs"
@@ -1229,7 +1270,6 @@ help:
 	@echo "... doxygen"
 	@echo "... nav_msgs_generate_messages_cpp"
 	@echo "... sensor_msgs_generate_messages_lisp"
-	@echo "... install/local"
 	@echo "... clean_test_results"
 	@echo "... uuid_msgs_generate_messages_lisp"
 	@echo "... mavros_msgs_generate_messages_nodejs"
@@ -1293,6 +1333,7 @@ help:
 	@echo "... actionlib_generate_messages_py"
 	@echo "... tf2_msgs_generate_messages_py"
 	@echo "... tf2_msgs_generate_messages_nodejs"
+	@echo "... JControllerServer"
 	@echo "... list_install_components"
 	@echo "... gmock_main"
 	@echo "... gmock"
@@ -1301,6 +1342,9 @@ help:
 	@echo "... JController.o"
 	@echo "... JController.i"
 	@echo "... JController.s"
+	@echo "... JControllerServer.o"
+	@echo "... JControllerServer.i"
+	@echo "... JControllerServer.s"
 	@echo "... blBroadcaster.o"
 	@echo "... blBroadcaster.i"
 	@echo "... blBroadcaster.s"

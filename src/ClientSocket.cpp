@@ -40,3 +40,24 @@ class ClientSocket : public DSocket
         }
     }
 };
+
+
+/*** UNIT-TEST ***/
+#ifdef SOCKCLI
+
+int main(int argc, char** argv) {
+    // Usage check
+    if (argc != 2) {
+        printf("Usage: %s <server address>\n", argv[0]);
+        exit(1);
+    }
+    ClientSocket* client_sock = new ClientSocket(argv[1], ROSPORT);
+    if (client_sock->init()) {
+        for(;;) {
+            client_sock->send("Hello!\n");
+        }
+    }
+    return 0;
+}
+
+#endif // SOCKCLI

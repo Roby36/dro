@@ -1,4 +1,5 @@
 /root/catkin_ws/ardupilot_ws/src/dro/build/CMakeFiles/install/strip.dir
+/root/catkin_ws/ardupilot_ws/src/dro/build/CMakeFiles/install/local.dir
 /root/catkin_ws/ardupilot_ws/src/dro/build/CMakeFiles/uuid_msgs_generate_messages_eus.dir
 /root/catkin_ws/ardupilot_ws/src/dro/build/CMakeFiles/geographic_msgs_generate_messages_eus.dir
 /root/catkin_ws/ardupilot_ws/src/dro/build/CMakeFiles/geographic_msgs_generate_messages_nodejs.dir
@@ -12,7 +13,6 @@
 /root/catkin_ws/ardupilot_ws/src/dro/build/CMakeFiles/doxygen.dir
 /root/catkin_ws/ardupilot_ws/src/dro/build/CMakeFiles/nav_msgs_generate_messages_cpp.dir
 /root/catkin_ws/ardupilot_ws/src/dro/build/CMakeFiles/sensor_msgs_generate_messages_lisp.dir
-/root/catkin_ws/ardupilot_ws/src/dro/build/CMakeFiles/install/local.dir
 /root/catkin_ws/ardupilot_ws/src/dro/build/CMakeFiles/clean_test_results.dir
 /root/catkin_ws/ardupilot_ws/src/dro/build/CMakeFiles/uuid_msgs_generate_messages_lisp.dir
 /root/catkin_ws/ardupilot_ws/src/dro/build/CMakeFiles/mavros_msgs_generate_messages_nodejs.dir
@@ -76,6 +76,7 @@
 /root/catkin_ws/ardupilot_ws/src/dro/build/CMakeFiles/actionlib_generate_messages_py.dir
 /root/catkin_ws/ardupilot_ws/src/dro/build/CMakeFiles/tf2_msgs_generate_messages_py.dir
 /root/catkin_ws/ardupilot_ws/src/dro/build/CMakeFiles/tf2_msgs_generate_messages_nodejs.dir
+/root/catkin_ws/ardupilot_ws/src/dro/build/CMakeFiles/JControllerServer.dir
 /root/catkin_ws/ardupilot_ws/src/dro/build/CMakeFiles/list_install_components.dir
 /root/catkin_ws/ardupilot_ws/src/dro/build/gtest/CMakeFiles/install/strip.dir
 /root/catkin_ws/ardupilot_ws/src/dro/build/gtest/CMakeFiles/edit_cache.dir
