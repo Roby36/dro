@@ -1,0 +1,2 @@
+- setup-file:
+    local-name: /root/catkin_ws/ardupilot_ws/src/dro/install/setup.sh

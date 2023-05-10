@@ -1,0 +1,1 @@
+/usr/bin/c++    -rdynamic CMakeFiles/DSocket.dir/DSocket.cpp.o  -o /root/catkin_ws/ardupilot_ws/src/dro/devel/lib/dro/DSocket 
