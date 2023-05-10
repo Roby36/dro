@@ -1,0 +1,5 @@
+
+<launch>
+  <node name="bl_broadcaster" pkg="dro" type="blBroadcaster" output="screen"/>
+  <node name="JControllerServer" pkg="dro" type="JControllerServer" output="screen"/>
+</launch>
