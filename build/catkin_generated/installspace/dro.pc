@@ -1,8 +1,0 @@
-prefix=/root/catkin_ws/ardupilot_ws/src/dro/install
-
-Name: dro
-Description: Description of dro
-Version: 0.0.0
-Cflags: 
-Libs: -L${prefix}/lib 
-Requires: 
