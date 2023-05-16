@@ -14,6 +14,7 @@ class blBroadcaster
 
     void odomCallback(const nav_msgs::Odometry& msg)
     {
+        // Construct & send bl_transform
         this->bl_transform.setOrigin(tf::Vector3(msg.pose.pose.position.x, 
                                                  msg.pose.pose.position.y, 
                                                  msg.pose.pose.position.z));
@@ -22,7 +23,7 @@ class blBroadcaster
                                                    msg.pose.pose.orientation.z,
                                                    msg.pose.pose.orientation.w ));
         this->br.sendTransform(tf::StampedTransform(this->bl_transform, ros::Time::now(), "odom", "base_link"));
-
+        // Construct & send blo_transform
         this->blo_transform.setOrigin(tf::Vector3(0, 0, 0));
         this->blo_transform.setRotation(tf::Quaternion(msg.pose.pose.orientation.x,
                                                    msg.pose.pose.orientation.y,

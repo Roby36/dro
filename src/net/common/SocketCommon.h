@@ -20,6 +20,19 @@
 #include <ctime>
 #include <chrono>
 
+// Socket unit-tests
 #define MAXTIMEDIGITS 24
+#define TESTBUFFSIZE  64
 #define SERVERPORT    7777
-#define ROSPORT       7778
+
+// ROS port-mapping
+#define CMDVELPORT    7778
+#define SERVICEPORT   7779
+
+// Time-stamp functions
+long sys_time();
+void append_timestamp(char* msg);
+void remove_timestamp(char* msg);
+long compute_time_diff(const int maxBuffSize, 
+                       char* buffer,     /*char (&buffer)[BUFFLIMIT]*/
+                       FILE* lfp);

@@ -2,7 +2,7 @@
 /*** This is a non-ROS program intended to execute on a client PC ***/
 /*** All ROS-related aspects are handled by JControllerServer.cpp on the other end ***/
 
-#include "../src/ClientSocket.cpp"
+#include "UDPclient.h"
 #include <curses.h>          // user keyboard input
 
 const int buffSize   = MAXTIMEDIGITS + 2; // size of buffer to be sent
@@ -16,12 +16,12 @@ int main(int argc, char** argv) {
         exit(1);
     }
     // Initialize client socket, logging to a dedicated file
-    FILE* log_fp = fopen("w", "./client_log.txt");
+    FILE* log_fp = fopen("./client_log.txt", "w");
     if (log_fp == NULL) {
         fprintf(stderr, "Error opening log file.\n");
         exit(1);
     }
-    ClientSocket* client_sock = new ClientSocket(argv[1], ROSPORT, log_fp);
+    UDPclient* client_sock = new UDPclient(argv[1], CMDVELPORT, log_fp);
     // Setup ncurses and client
     initscr();
     cbreak();

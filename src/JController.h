@@ -21,7 +21,7 @@
 #include <curses.h> // keyboard input
 
 const int frequency  = 1000; // while-loop frequency
-const int tout    = 100;    // ncurses timeout                                 
+const int tout       = 100;  // ncurses timeout                                 
 const int queue_size = 10;
 
 enum BaseMode : uint8_t {

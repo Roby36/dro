@@ -1,8 +1,8 @@
 
-#include "ServerSocket.cpp"
-#include "JController.cpp"
+#include "./net/server/UDPserver.h"
+#include "JController.h"
 
-#ifndef SOCKSERV
+#ifndef UDPSERV
 
 int main(int argc, char** argv)
 {
@@ -10,13 +10,13 @@ int main(int argc, char** argv)
     ros::init(argc, argv, "JControllerServer");    
     ros::NodeHandle nh;                       
     sleep(2);
-    // Initialize ServerSocket connection, with dedicated log file
-    FILE* log_fp = fopen("w", "./server_log.txt");
+    // Initialize UDPserver connection, with dedicated log file
+    FILE* log_fp = fopen("./server_log.txt", "w");
     if (log_fp == NULL) {
         fprintf(stderr, "Error opening log file.\n");
         exit(1);
     }
-    ServerSocket* serv_sock = new ServerSocket(ROSPORT, 2 + MAXTIMEDIGITS, log_fp);
+    UDPserver* serv_sock = new UDPserver(ROSPORT, 2 + MAXTIMEDIGITS, log_fp);
     if (serv_sock->init()) {
         ROS_INFO_STREAM("Waiting on port " << serv_sock->port);
     }
@@ -50,4 +50,4 @@ int main(int argc, char** argv)
     return 0;                              
 }
 
-#endif // SOCKSERV
+#endif // UDPSERV

@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.0.2)
 
 project(dro)
 
-add_compile_options(-std=c++11)
+add_compile_options(-std=c++11 -I./net/client -I./net/server -I./net/common )
 
 find_package(catkin REQUIRED COMPONENTS roscpp geometry_msgs mavros_msgs nav_msgs tf)
 
@@ -19,7 +19,9 @@ add_executable(JController JController.cpp)
 target_link_libraries(JController ${catkin_LIBRARIES} ncurses)
 target_link_libraries(JController ${ncurses++_LIBRARIES}) ## keyboard_mover
 
-add_executable(JControllerServer DSocket.cpp JControllerServer.cpp)
+add_executable(JControllerServer JController.cpp JControllerServer.cpp ./net/net.a)
+# find_library(NET net ./net/net.a)
+# target_link_libraries(JControllerServer ${NET})
 target_link_libraries(JControllerServer ${catkin_LIBRARIES} ncurses)
 target_link_libraries(JControllerServer ${ncurses++_LIBRARIES}) ## keyboard_mover
 
