@@ -7,9 +7,10 @@
 #include <tf/tf.h>
 #include <tf/transform_listener.h>
 
-#include "../handlers/ServiceHandler.h"
-#include "../handlers/VelPubHandler.h"
+#include "./ServiceHandler.h"
+#include "../nav/VelController.h"
 #include "../handlers/SubHandler.h"
+#include "../handlers/PubHandler.h"
 
 #include <string> 
 #include <iostream>
@@ -19,10 +20,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <cstdint>  // for integer types
-#include <curses.h> // keyboard input
-
-const int frequency  = 1000; // while-loop frequency
-const int tout       = 100;  // ncurses timeout                                 
+#include <curses.h> // keyboard input                               
 
 //** Keyboard commands **//
 enum Keypress {
@@ -39,30 +37,42 @@ enum Keypress {
 
 class JController
 {
-    /* Velocity handler (initialized elsewhere) */
-    VelPubHandler * const vel_ph;
+    /** Ncurses / input variables **/
+    const int frequency  = 1000; // while-loop frequency
+    const int tout       = 100;  // ncurses timeout  
 
-    /* Scan width and depth */
-    const double min_scan_angle;
-    const double max_scan_angle;
-    const double min_distance;
+    /** Velocity publisher handler (initialized outside) **/
+    PubHandler <geometry_msgs::TwistStamped> * const vel_ph;
 
-    /* Drone default linear and angular velocities */
+    /** Laser subscriber handler (initialized outside) **/
+    SubHandler <sensor_msgs::LaserScan> * const laser_sh;
+
+    /** Velocity controller (initialized outside) **/
+    VelController * const vel_ctr;
+
+    /* VelController parameters */
+    const double ang_range;
+    const double thresh_distance;
+    const std::string input_vel_frame_id   = "base_link_orientation";
+    const std::string output_vel_frame_id  = "odom"; // necessary for MAVROS
+    const std::string input_laser_frame_id = "base_scan";
+
+    /* Drone set linear and angular velocities */
     tf::Vector3 const lv;
     tf::Vector3 const av;  
 
     public:
 
     /* Constructor */
-    JController(VelPubHandler * const vel_ph,
+    JController(PubHandler <geometry_msgs::TwistStamped> * const vel_ph,
+                SubHandler <sensor_msgs::LaserScan>      * const laser_sh,
+                VelController * const vel_ctr,
                 const tf::Vector3&    lv,
                 const tf::Vector3&    av,
-                const double          min_scan_angle =  1.0, 
-                const double          max_scan_angle = -1.0,
-                const double          min_distance   = 6.0)
-        : vel_ph(vel_ph), lv(lv), av(av),
-          min_scan_angle(min_scan_angle), max_scan_angle(max_scan_angle),
-          min_distance(min_distance)
+                const double ang_range       = M_PI / 2.0,
+                const double thresh_distance = 8.0 )
+        : vel_ph(vel_ph), laser_sh(laser_sh), vel_ctr(vel_ctr), lv(lv), av(av),
+          ang_range(ang_range), thresh_distance(thresh_distance)
     {
     }
 

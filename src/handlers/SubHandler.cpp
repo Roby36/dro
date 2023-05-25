@@ -20,6 +20,13 @@ template <typename T> void SubHandler<T>::callback( const T& msg )
     }
 }
 
+template <typename T> void SubHandler<T>::update_msg()
+{
+    do {
+        ros::spinOnce();
+    } while (!this->initialized);
+}
+
 // Initialize explicitly all required classes for compiler
 template class SubHandler <nav_msgs::Odometry>;
 template class SubHandler <sensor_msgs::LaserScan>;

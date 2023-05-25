@@ -1,4 +1,7 @@
 
+/* This module is not a good abstraction yet,
+ * but mostly a test for different services necessary for the drone
+ */
 #pragma once
 
 #include <ros/ros.h> 

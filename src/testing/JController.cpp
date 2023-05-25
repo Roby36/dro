@@ -19,10 +19,16 @@ JController::handleCommand(char cmd)
         case Keypress::LEFT:      l_vel.setY(  lv.getY()); break;
         default:                                           break;
     }
-    // Publish resulting linear & angular components
-    vel_ph->forward_obstacle_check(l_vel, a_vel,
-                                   min_scan_angle, max_scan_angle,
-                                   min_distance);
+    // Update subscriber
+    laser_sh->update_msg();
+    // Initialize velocity message
+    geometry_msgs::TwistStamped cmd_vel_msg;
+    // Pass velocity and laser messages to VelController module
+    vel_ctr->omnidirectional_obstacle_check(l_vel, a_vel, input_vel_frame_id,
+        output_vel_frame_id, input_laser_frame_id,ang_range, thresh_distance,
+             laser_sh->currMsg(), cmd_vel_msg);
+    // Publish the resulting message
+    vel_ph->publish(cmd_vel_msg);
     if (cmd == Keypress::QUIT) {
         return true; // return true if we want to break out of loop
     }
@@ -33,12 +39,12 @@ void
 JController::handleKeypress()
 {
     char cmd;
-    ros::Rate rate(::frequency);
+    ros::Rate rate(frequency);
     // Setup ncurses
     initscr();
     cbreak();
     noecho();
-    timeout(::tout);
+    timeout(tout);
     while (ros::ok()) {
         if (handleCommand(cmd = getch())) {
             break; // break loop whenever true is returned

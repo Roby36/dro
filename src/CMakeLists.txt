@@ -13,7 +13,7 @@ catkin_package()
 
 include_directories(include ${catkin_INCLUDE_DIRS})
 
-add_executable(JController ./handlers/SubHandler.cpp ./handlers/VelPubHandler.cpp ./handlers/ServiceHandler.cpp ./testing/JController.cpp ./testing/JCUnitTest.cpp)
+add_executable(JController ./handlers/SubHandler.cpp ./handlers/PubHandler.cpp ./transforms/TransformBroadcaster2.cpp ./nav/VelController.cpp ./testing/ServiceHandler.cpp ./testing/JController.cpp ./testing/JCUnitTest.cpp)
 target_link_libraries(JController ${catkin_LIBRARIES} ncurses)
 target_link_libraries(JController ${ncurses++_LIBRARIES}) ## keyboard_mover
 
