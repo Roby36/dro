@@ -1,6 +1,16 @@
 
 #include "TransformBroadcaster2.h"
 
+inline tf::Quaternion TransformBroadcaster::Quaternion_fromRPY(double roll, 
+                                                               double pitch, 
+                                                               double yaw) 
+{
+    tf::Quaternion q;
+    q.setRPY(roll, pitch, yaw); 
+    q.normalize();
+    return q;
+}
+
 void 
 TransformBroadcaster::broadcast_transform(const tf::Vector3&    position,
                                           const tf::Quaternion& orientation,
@@ -17,9 +27,7 @@ void
 TransformBroadcaster::broadcast_moving_frames()
 {
     // Update odometry message & retrieve most current one
-    do {
-        ros::spinOnce();
-    } while (!odom_sh->is_initialized());
+    odom_sh->update_msg();
     const nav_msgs::Odometry msg = odom_sh->currMsg();
     // Convert message point to tf::Vector3
     tf::Vector3 bt_v;
@@ -37,16 +45,14 @@ void TransformBroadcaster::broadcast_static_frames()
 {
     // map->odom transform is set here
     // For now we assume map and odom correspond
-    tf::Quaternion q;
-    q.setRPY(0, 0, 0); 
-    q.normalize();
-    broadcast_transform(tf::Vector3(0.0f, 0.0f, 0.0f), q, "/map", "/odom", this->mapTodom);
+    broadcast_transform(tf::Vector3(0.0f, 0.0f, 0.0f), 
+        Quaternion_fromRPY(0,0,0), "/map", "/odom", this->mapTodom);
+
     /* IMPORTANT:
     /* Base_scan static transform set-up using sensor's settings in
     /* /ardupilot_gazebo/models/iris_with_standoffs/models.sdf */
-    q.setRPY(0, 0, 0); 
-    q.normalize();
-    broadcast_transform(tf::Vector3(0.0f, 0.0f, 0.2f), q, "base_link", "base_scan", this->blTbs);   
+    broadcast_transform(tf::Vector3(0.0f, 0.0f, 0.2f),
+        Quaternion_fromRPY(0,0,0), "base_link", "base_scan", this->blTbs);   
 }
 
 void TransformBroadcaster::run()
@@ -58,4 +64,3 @@ void TransformBroadcaster::run()
         rate.sleep();
     }
 }
-

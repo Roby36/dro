@@ -27,6 +27,11 @@ class TransformBroadcaster
     //** Broadcasting frequency **//
     const int frequency;
 
+    //** Helper-function to construct a quaternion **//
+    static inline tf::Quaternion Quaternion_fromRPY(double roll, 
+                                                    double pitch, 
+                                                    double yaw);
+
     //** Helper-function to broadcast each transform **//
     void broadcast_transform(const tf::Vector3&    position,
                              const tf::Quaternion& orientation,
