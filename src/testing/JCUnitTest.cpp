@@ -17,8 +17,10 @@ int main(int argc, char** argv)
     SubHandler <sensor_msgs::LaserScan> laser_sh (&nh, ::laser_topic);
     // Initialize velocity publisher handler
     PubHandler <geometry_msgs::TwistStamped> vel_ph (&nh, ::cmd_vel_topic);
+    // Initialize PID controller
+    PID pid_ctr (0.0, 2.0, 0.0, 3.0);
     // Initialize velocity controller
-    VelController vel_ctr;
+    VelController vel_ctr (&vel_ph, &laser_sh, &pid_ctr);
     // Finally, initialize JController
     JController* JController = new ::JController(&vel_ph, &laser_sh, &vel_ctr,
                                                 tf::Vector3(1.0f, 1.0f, 1.0f),
