@@ -1,5 +1,13 @@
 # Description of main source files
 
+The following files are the main source files of the project. They are located in the `src` directory.
+The source files are written in C++ and divided into submodules. The submodules are as follows:
+
+- `handlers`: contains the source files which handle the abstracted subscribers and pulishers
+- `nav`: contains the source files which handle the navigation of the drone. This is where we find the PID controller and the bug3 pathfinding algorithm.
+- `transforms`: contains the source files which handle the static and dynamic transforms between the different reference frames.
+
+
 Before being compiled and executed, the programs below first require:
 1. Starting a SITL copter session (from the appropriate directory)\
     `sim_vehicle.py -v ArduCopter -f gazebo-iris --map --console`
