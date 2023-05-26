@@ -9,6 +9,7 @@
 
 #include "./ServiceHandler.h"
 #include "../nav/VelController.h"
+#include "../nav/PID.h"
 #include "../handlers/SubHandler.h"
 #include "../handlers/PubHandler.h"
 
@@ -31,8 +32,10 @@ enum Keypress {
     FORWARDS  = 'i',
     BACKWARDS = 'm',
     RIGHT     = 'k',
-    LEFT      = 'j', 
-    QUIT      = 'q'
+    LEFT      = 'j',
+
+    NAVTEST   = 'T', 
+    QUIT      = 'q',
 };
 
 class JController
@@ -53,13 +56,19 @@ class JController
     /* VelController parameters */
     const double ang_range;
     const double thresh_distance;
-    const std::string input_vel_frame_id   = "base_link_orientation";
-    const std::string output_vel_frame_id  = "odom"; // necessary for MAVROS
-    const std::string input_laser_frame_id = "base_scan";
 
-    /* Drone set linear and angular velocities */
+    //** Velocity input frame **//
+    const std::string input_vel_frame_id = "base_link_orientation";
+  
+    /* Set linear and angular velocities */
     tf::Vector3 const lv;
     tf::Vector3 const av;  
+
+    /* Publishing velocities through obstacle check */
+    void publish_checked_velocities(tf::Vector3 l_vel, tf::Vector3 a_vel);
+
+    /* Navigation test */
+    void navtest();
 
     public:
 
@@ -70,7 +79,7 @@ class JController
                 const tf::Vector3&    lv,
                 const tf::Vector3&    av,
                 const double ang_range       = M_PI / 2.0,
-                const double thresh_distance = 8.0 )
+                const double thresh_distance = 3.0 )
         : vel_ph(vel_ph), laser_sh(laser_sh), vel_ctr(vel_ctr), lv(lv), av(av),
           ang_range(ang_range), thresh_distance(thresh_distance)
     {

@@ -1,6 +1,32 @@
 
 #include "JController.h"
 
+void JController::publish_checked_velocities(tf::Vector3 l_vel, tf::Vector3 a_vel)
+{
+    // Update subscriber
+    laser_sh->update_msg();
+    // Initialize velocity message
+    geometry_msgs::TwistStamped cmd_vel_msg;
+    // Pass velocity and laser messages to VelController module
+    vel_ctr->omnidirectional_obstacle_check(l_vel, a_vel, input_vel_frame_id,
+        ang_range, thresh_distance, laser_sh->currMsg(), cmd_vel_msg);
+    // Stamp & publish the resulting message
+    cmd_vel_msg.header.stamp = ros::Time::now();
+    vel_ph->publish(cmd_vel_msg);
+}
+
+void JController::navtest()
+{
+    ROS_INFO_STREAM("Starting navtest");
+    // Hard-coded navigation test for the VelController module
+    vel_ctr->reset_PID(0.0, 0.3, 0.0, 0.4);
+    while (ros::ok()) {
+        vel_ctr->follow_wall(3.0, 0.0, M_PI/8.0, 3.0, -M_PI/2.0, 3.0, 
+            0.5, 0.5, 0.1, 100);
+    }
+    ROS_INFO_STREAM("Starting navtest");
+}
+
 bool 
 JController::handleCommand(char cmd)
 {
@@ -17,21 +43,11 @@ JController::handleCommand(char cmd)
         case Keypress::BACKWARDS: l_vel.setX( -lv.getX()); break;
         case Keypress::RIGHT:     l_vel.setY( -lv.getY()); break;
         case Keypress::LEFT:      l_vel.setY(  lv.getY()); break;
+        case Keypress::NAVTEST:   navtest();               break;
+        case Keypress::QUIT:      return true;
         default:                                           break;
     }
-    // Update subscriber
-    laser_sh->update_msg();
-    // Initialize velocity message
-    geometry_msgs::TwistStamped cmd_vel_msg;
-    // Pass velocity and laser messages to VelController module
-    vel_ctr->omnidirectional_obstacle_check(l_vel, a_vel, input_vel_frame_id,
-        output_vel_frame_id, input_laser_frame_id,ang_range, thresh_distance,
-             laser_sh->currMsg(), cmd_vel_msg);
-    // Publish the resulting message
-    vel_ph->publish(cmd_vel_msg);
-    if (cmd == Keypress::QUIT) {
-        return true; // return true if we want to break out of loop
-    }
+    publish_checked_velocities(l_vel, a_vel);
     return false;
 }
 
