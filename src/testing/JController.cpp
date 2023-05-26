@@ -21,10 +21,26 @@ void JController::navtest()
     // Hard-coded navigation test for the VelController module
     vel_ctr->reset_PID(0.0, 0.3, 0.0, 0.4);
     while (ros::ok()) {
-        vel_ctr->follow_wall(3.0, 0.0, M_PI/8.0, 3.0, -M_PI/2.0, 3.0, 
+        vel_ctr->follow_wall(4.0, 0.0, M_PI/4.0, 3.0, -M_PI/2.0, 3.0, 
             0.5, 0.5, 0.1, 100);
     }
-    ROS_INFO_STREAM("Starting navtest");
+    ROS_INFO_STREAM("Ending navtest");
+}
+
+void JController::bug2test()
+{
+    ROS_INFO_STREAM("Starting bug2test");
+    vel_ctr->Bug2("map",
+                  tf::Vector3(20.0, 20.0, 20.0),
+                  tf::Vector3(1.0, 1.0, 1.0),
+                  tf::Vector3(0.5, 0.0, 0.0),
+                  tf::Vector3(0.0, 0.0, 0.5),
+                  tf::Vector3(0.1, 0.1, 0.1),
+                  tf::Vector3(1.0, 1.0, 1.0),
+                  M_PI/8.0,
+                  3.0,
+                  100);
+    ROS_INFO_STREAM("Ending bug2test");
 }
 
 bool 
@@ -44,6 +60,7 @@ JController::handleCommand(char cmd)
         case Keypress::RIGHT:     l_vel.setY( -lv.getY()); break;
         case Keypress::LEFT:      l_vel.setY(  lv.getY()); break;
         case Keypress::NAVTEST:   navtest();               break;
+        case Keypress::BUG2TEST:  bug2test();              break;
         case Keypress::QUIT:      return true;
         default:                                           break;
     }

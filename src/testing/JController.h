@@ -35,6 +35,7 @@ enum Keypress {
     LEFT      = 'j',
 
     NAVTEST   = 'T', 
+    BUG2TEST  = 'B',
     QUIT      = 'q',
 };
 
@@ -67,9 +68,6 @@ class JController
     /* Publishing velocities through obstacle check */
     void publish_checked_velocities(tf::Vector3 l_vel, tf::Vector3 a_vel);
 
-    /* Navigation test */
-    void navtest();
-
     public:
 
     /* Constructor */
@@ -88,5 +86,9 @@ class JController
     /* Methods to handle input */
     bool handleCommand(char);
     void handleKeypress();
+
+    /* Navigation tests */
+    void navtest();
+    void bug2test();
 
 };
