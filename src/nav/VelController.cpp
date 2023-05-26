@@ -26,7 +26,7 @@ double VelController::min_distance(const sensor_msgs::LaserScan& laser_msg,
     int min_index, max_index;
     ranges_indices(laser_msg, min_scan_angle, max_scan_angle, min_index, max_index);
     // Iterate through all laser readings to find lowest distance reading
-    double min_distance = INFINITY;
+    double min_distance = laser_msg.range_max;
     for (int i = min_index; i < max_index; i++) {
         if (laser_msg.ranges[i] < min_distance && is_within_range(laser_msg, i)) {
             min_distance = laser_msg.ranges[i];
@@ -125,17 +125,11 @@ void VelController::follow_wall(const double obst_thresh_distance,
     const double obst_max_angle = obst_scan_angle + (obst_ang_range / 2.0);
     // Compute current minimum wall distance
     double curr_wall_distance = min_distance(laser_sh->currMsg(), min_scan_angle, max_scan_angle);
-
-    ROS_INFO_STREAM("Min_wall_dist " << curr_wall_distance);
-
     // Compute resulting error
     double next_error = wall_goal_distance - curr_wall_distance;
     // Feed error in PID controller, and prepare velocity components and message
     tf::Vector3 lv (linear_velocity, 0.0, 0.0);
     tf::Vector3 av (0.0, 0.0, pid_ctr->step(next_error, dt));
-
-    ROS_INFO_STREAM("PID angular velocity " << pid_ang);
-
     geometry_msgs::TwistStamped cmd_vel_msg;
     bool obstacle = false; // keep track of potential obstacles
     ros::Time startTime = ros::Time::now();

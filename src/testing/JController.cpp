@@ -19,10 +19,10 @@ void JController::navtest()
 {
     ROS_INFO_STREAM("Starting navtest");
     // Hard-coded navigation test for the VelController module
-    vel_ctr->reset_PID(0.0, 1.0, 0.0, 0.0);
+    vel_ctr->reset_PID(0.0, 0.3, 0.0, 0.4);
     while (ros::ok()) {
         vel_ctr->follow_wall(3.0, 0.0, M_PI/8.0, 3.0, -M_PI/2.0, 3.0, 
-            0.2, 0.5, 0.1, 100);
+            0.5, 0.5, 0.1, 100);
     }
     ROS_INFO_STREAM("Starting navtest");
 }
