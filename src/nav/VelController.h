@@ -11,10 +11,31 @@
 #include <tf/transform_listener.h>
 
 #include "../transforms/TransformBroadcaster2.h"
-
 #include "../handlers/PubHandler.h"
 #include "../handlers/SubHandler.h"
 #include "PID.h"
+
+//! Tested & tuned PID parameters for obstacle circumvention
+namespace PID_settings
+{
+    // PID
+    const double K = 0.0;
+    const double Kp = 0.3;
+    const double Ki = 0.0;
+    const double Kd = 0.4;
+    // follow_wall() function
+    const double obst_thresh_distance = 3.0;
+    const double obst_scan_angle      = 0.0;
+    const double obst_ang_range       =  M_PI/8.0;
+    const double wall_goal_distance   = 3.0;
+    const double wall_scan_angle      = -M_PI/2.0;
+    const double wall_ang_range       = 3.0; // just below PI to avoid discontinuities
+    const double linear_velocity      = 0.5;
+    const double angular_velocity     = 0.5;
+    const double dt                   = 0.1;
+    const int    loop_frequency       = 100;
+};
+//!
 
 class VelController
 {

@@ -23,6 +23,10 @@ unit_t PID::step(unit_t next_err, unit_t time_step)
     }
     // Add new incoming error to array
     err_array[curr_err_term++] = next_err;
+    // Check if time_step is zero
+    if (time_step == 0) {
+        return 0;
+    }
     // Compute and return command
     unit_t u = Kp * next_err +
                Ki * curr_err_sum() * time_step +
