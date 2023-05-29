@@ -32,8 +32,7 @@ int main(int argc, char** argv)
     Shandler->reqArming(true);
     Shandler->reqTakeoff(0, 0, 0, 0, 2);
     sleep(10);  // sleep to give takeoff time to execute
-        // JController->handleKeypress(); // enter manual flight until user presses 'q'
-    JController->bug2test();
+    JController->handleKeypress(); // enter manual flight until user presses 'q'
     Shandler->reqLand(0, 0, 0, 0, 0);
     sleep(15);  // sleep to give landing time to execute
     Shandler->reqArming(false);  // Landing command already takes care of disarming

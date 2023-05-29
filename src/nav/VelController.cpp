@@ -1,20 +1,46 @@
 
 #include "VelController.h"
 
+//** Contructor & destructor **//
+VelController::VelController(PubHandler <geometry_msgs::TwistStamped> * const vel_ph,
+                            SubHandler <sensor_msgs::LaserScan>      * const laser_sh,
+                            SubHandler <nav_msgs::Odometry>          * const odom_sh,
+                            PID* pid_ctr,
+                            const std::string working_frame_id,
+                            const std::string output_vel_frame_id,
+                            const std::string input_laser_frame_id,
+                            const std::string logpath)
+                            :   working_frame_id(working_frame_id),
+                                output_vel_frame_id(output_vel_frame_id),
+                                input_laser_frame_id(input_laser_frame_id),
+                                vel_ph(vel_ph), 
+                                laser_sh(laser_sh), 
+                                odom_sh(odom_sh), 
+                                pid_ctr(pid_ctr),
+                                m_logger(logpath) 
+{
+}
+
+VelController::~VelController()
+{
+}
+
 //** Algorithms **// 
 
 bool VelController::omnidirectional_obstacle_check(const tf::Vector3& lv, 
                                                    const tf::Vector3& av,
                                                    const std::string& input_vel_frame_id,
+
                                                    const double ang_range,
                                                    const double thresh_distance,
+
                                                    const sensor_msgs::LaserScan& laser_msg,
                                                     geometry_msgs::TwistStamped& cmd_vel_msg)
 {
     //! This transformation still needs work
     //! For now we trivially assume that input_vel_frame_id = working_frame_id
     if (!update_transform(this->working_frame_id, input_vel_frame_id)) {
-        ROS_INFO_STREAM("Cannot get input_vel_frame -> working_frame transform.");
+        m_logger.logstr("Cannot get input_vel_frame -> working_frame transform.");
         return false;
     }
     //!
@@ -22,7 +48,7 @@ bool VelController::omnidirectional_obstacle_check(const tf::Vector3& lv,
     tf::Vector3 wf_av = T(av); 
     // Now transform from working frame to output frame (i.e. "odom" for mavros)
     if (!update_transform(output_vel_frame_id, this->working_frame_id)) {
-        ROS_INFO_STREAM("Cannot get working_frame_id -> output_vel_frame_id transform.");
+        m_logger.logstr("Cannot get working_frame_id -> output_vel_frame_id transform.");
         return false;
     }
     tf::Vector3 ovf_lv = T(wf_lv);
@@ -40,10 +66,10 @@ bool VelController::omnidirectional_obstacle_check(const tf::Vector3& lv,
         // If one single obstacle detected within threshhold distance, stop drone
         if (laser_msg.ranges[i] < thresh_distance && is_within_range(laser_msg, i)) {
             // If obstacle too close, return false without publishing velocities
-            ROS_INFO_STREAM( "Stopping: obstacle detected within thresh_distance "
-                            << thresh_distance << " at laser scan angle "
-                            << i*laser_msg.angle_increment + laser_msg.angle_min
-                            << " and distance " << laser_msg.ranges[i]);
+            m_logger.logstr( "Stopping: obstacle detected within thresh_distance " +
+                    std::to_string(thresh_distance) + " at laser scan angle "  +
+                    std::to_string(i*laser_msg.angle_increment + laser_msg.angle_min) +
+                    " and distance " + std::to_string(laser_msg.ranges[i]) );
             return false;
         }
     }
@@ -55,11 +81,15 @@ bool VelController::omnidirectional_obstacle_check(const tf::Vector3& lv,
 void VelController::follow_wall(const double obst_thresh_distance,
                                 const double obst_scan_angle,
                                 const double obst_ang_range,
+
                                 const double wall_goal_distance,
                                 const double wall_scan_angle,
                                 const double wall_ang_range,
+
                                 const double linear_velocity,
+
                                 const double angular_velocity,
+
                                 const double dt, // PID controller parameters:
                                 const int    loop_frequency)
 {
@@ -108,8 +138,10 @@ bool VelController::Bug2( const std::string& goal_frame_id,
                           const tf::Vector3& angular_velocity,
                           const tf::Vector3& ang_tol,
                           const tf::Vector3& line_tol,
+
                           const double       obst_ang_range,
                           const double       obst_thresh_distance,
+                          
                           const int          frequency)
 {
     // Retrieve starting position (in odom frame)
@@ -117,12 +149,13 @@ bool VelController::Bug2( const std::string& goal_frame_id,
     update_position_vector(start);
     // Transform goal point to odometry frame
     if (!update_transform(odom_sh->currMsg().header.frame_id, goal_frame_id)) {
-        ROS_INFO_STREAM("Cannot get goal_frame -> odometry transform.");
+        m_logger.logstr("Cannot get goal_frame -> odometry transform.");
         return false;
     }
     tf::Vector3 goal = T(goal_point);
-    ROS_INFO( "goal_frame_id transformed to %s; goal point to (%f, %f, %f)\n",
-        odom_sh->currMsg().header.frame_id.c_str(), goal.getX(), goal.getY(), goal.getZ());
+        m_logger.logstr( "goal_frame_id transformed to " + odom_sh->currMsg().header.frame_id + 
+                        " ; goal point to ( "  + std::to_string(goal.getX()) + ", " 
+                        +  std::to_string(goal.getY()) + ", " + std::to_string(goal.getZ()) + " )\n");   
     // Rotate toward goal point
     rotate( tf::Vector3(0.0, 0.0, atan2(goal.getY() - start.getY(), goal.getX() - start.getX())), 
             ang_tol, angular_velocity, frequency);
@@ -191,6 +224,43 @@ void VelController::reset_PID(const double K,
     // Reset PID with desired values
     pid_ctr->reset(K, Kp, Ki, Kd, pid_error_sum_terms);
 }
+
+// HARDCODED - must generalize PID_settings into struct
+void VelController::PID_periodic_test( const double Kp, const int dur, std::string outfile)
+{
+    m_logger.logstr("Starting PID_periodic_test with Kp = " + std::to_string(Kp) + "\n");
+    // Reset PID
+    pid_ctr->reset( 0.0,
+                    Kp,
+                    0.0,
+                    0,
+                    -1 );
+    // Enter timed loop and follow_wall() 
+    ros::Time startTime = ros::Time::now();
+    ros::Duration loopDuration (dur); // dur seconds 
+    while (ros::ok() && ((ros::Time::now() < startTime + loopDuration))) {
+        follow_wall(1.0,
+                    PID_settings::obst_scan_angle,
+                    PID_settings::obst_ang_range,
+                    PID_settings::wall_goal_distance,
+                    PID_settings::wall_scan_angle,
+                    PID_settings::wall_ang_range,
+                    PID_settings::linear_velocity,
+                    PID_settings::angular_velocity,
+                    PID_settings::dt,
+                    PID_settings::loop_frequency);
+    }
+    // Log error results to file
+    pid_ctr->log2file(outfile);
+    m_logger.logstr("Ending PID_periodic_test with Kp = " + std::to_string(Kp) + "\n");
+}
+// HARDCODED - must generalize PID_settings into struct
+
+
+
+
+
+
 
 //** Private helper functions **//
 
@@ -276,7 +346,7 @@ void VelController::rotate( const tf::Vector3& targetOr,
                             const tf::Vector3& ang_vel,  
                             int frequency)
 {
-    ROS_INFO( "rotate input yaw: %f\n", targetOr.getZ());
+    m_logger.logstr( "rotate: input yaw: " + std::to_string(targetOr.getZ()) + "\n");
     geometry_msgs::TwistStamped cmd_vel_msg;
     vector3TFToMsg(ang_vel, cmd_vel_msg.twist.angular);
     double roll, pitch, yaw;
@@ -288,7 +358,7 @@ void VelController::rotate( const tf::Vector3& targetOr,
         rate.sleep();
     } while (ros::ok() && !is_close(targetOr, tf::Vector3(roll, pitch, yaw), tol));
     stop();
-    ROS_INFO( "rotate output yaw: %f\n", yaw);
+    m_logger.logstr( "rotate: output yaw: " + std::to_string(yaw) + "\n");
 }
 
 bool VelController::intersects_line( const tf::Vector3& start,

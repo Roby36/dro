@@ -36,6 +36,8 @@ enum Keypress {
 
     NAVTEST   = 'T', 
     BUG2TEST  = 'B',
+    PIDTEST   = 'P',
+
     QUIT      = 'q',
 };
 
@@ -87,8 +89,9 @@ class JController
     bool handleCommand(char);
     void handleKeypress();
 
-    /* Navigation tests */
+    /* Navigation tests (hard-coded) */
     void navtest();
     void bug2test();
+    void pidTest(double Kp, int dur = 480);
 
 };

@@ -15,34 +15,6 @@ void JController::publish_checked_velocities(tf::Vector3 l_vel, tf::Vector3 a_ve
     vel_ph->publish(cmd_vel_msg);
 }
 
-void JController::navtest()
-{
-    ROS_INFO_STREAM("Starting navtest");
-    // Hard-coded navigation test for the VelController module
-    vel_ctr->reset_PID(0.0, 0.3, 0.0, 0.4);
-    while (ros::ok()) {
-        vel_ctr->follow_wall(4.0, 0.0, M_PI/4.0, 3.0, -M_PI/2.0, 3.0, 
-            0.5, 0.5, 0.1, 100);
-    }
-    ROS_INFO_STREAM("Ending navtest");
-}
-
-void JController::bug2test()
-{
-    ROS_INFO_STREAM("Starting bug2test");
-    vel_ctr->Bug2("map",
-                  tf::Vector3(20.0, 20.0, 20.0),
-                  tf::Vector3(1.0, 1.0, 1.0),
-                  tf::Vector3(0.5, 0.0, 0.0),
-                  tf::Vector3(0.0, 0.0, 0.5),
-                  tf::Vector3(0.1, 0.1, 0.1),
-                  tf::Vector3(1.0, 1.0, 1.0),
-                  M_PI/8.0,
-                  3.0,
-                  100);
-    ROS_INFO_STREAM("Ending bug2test");
-}
-
 bool 
 JController::handleCommand(char cmd)
 {
@@ -50,7 +22,7 @@ JController::handleCommand(char cmd)
     tf::Vector3 l_vel (0, 0, 0);
     tf::Vector3 a_vel (0, 0, 0);
     switch (cmd) {
-        // Assign linear & angular components based on incoming command
+        // Movement commands
         case Keypress::UP:        l_vel.setZ(  lv.getZ()); break;
         case Keypress::DOWN:      l_vel.setZ( -lv.getZ()); break;
         case Keypress::CW:        a_vel.setZ( -av.getZ()); break;
@@ -61,6 +33,18 @@ JController::handleCommand(char cmd)
         case Keypress::LEFT:      l_vel.setY(  lv.getY()); break;
         case Keypress::NAVTEST:   navtest();               break;
         case Keypress::BUG2TEST:  bug2test();              break;
+
+        // Pid tests (hard-coded)
+        case '1': pidTest(0.01);    break;
+        case '2': pidTest(0.02);    break;
+        case '3': pidTest(0.03);    break;
+        case '4': pidTest(0.04);    break;
+        case '5': pidTest(0.05);    break;
+        case '6': pidTest(0.06);    break;
+        case '7': pidTest(0.07);    break;
+        case '8': pidTest(0.08);    break;
+        case '9': pidTest(0.09);    break;
+
         case Keypress::QUIT:      return true;
         default:                                           break;
     }
@@ -89,4 +73,42 @@ JController::handleKeypress()
     echo();
     endwin();
 }
+
+
+//!HARD-CODED NAVIGATION TESTS
+
+void JController::navtest()
+{
+    ROS_INFO_STREAM("Starting navtest");
+    // Hard-coded navigation test for the VelController module
+    vel_ctr->reset_PID(0.0, 0.3, 0.0, 0.4);
+    while (ros::ok()) {
+        vel_ctr->follow_wall(4.0, 0.0, M_PI/4.0, 3.0, -M_PI/2.0, 3.0, 
+            0.5, 0.5, 0.1, 100);
+    }
+    ROS_INFO_STREAM("Ending navtest");
+}
+
+void JController::bug2test()
+{
+    ROS_INFO_STREAM("Starting bug2test");
+    vel_ctr->Bug2("map",
+                  tf::Vector3(20.0, 20.0, 20.0),
+                  tf::Vector3(1.0, 1.0, 1.0),
+                  tf::Vector3(0.5, 0.0, 0.0),
+                  tf::Vector3(0.0, 0.0, 0.5),
+                  tf::Vector3(0.1, 0.1, 0.1),
+                  tf::Vector3(1.0, 1.0, 1.0),
+                  M_PI/8.0,
+                  3.0,
+                  100);
+    ROS_INFO_STREAM("Ending bug2test");
+}
+
+void JController::pidTest(double Kp, int dur)
+{
+    vel_ctr->PID_periodic_test(Kp, dur);
+}
+
+//!HARD-CODED NAVIGATION TESTS
 
