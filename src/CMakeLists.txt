@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.0.2)
 
 project(dro)
 
-add_compile_options(-std=c++11 -I./net/client -I./net/server -I./net/common )
+add_compile_options(-std=c++11 -DPIDLOG -DNAVLOUT -DNAVLFILE -I./net/client -I./net/server -I./net/common )
 
 find_package(catkin REQUIRED COMPONENTS roscpp geometry_msgs mavros_msgs nav_msgs tf)
 
@@ -13,7 +13,10 @@ catkin_package()
 
 include_directories(include ${catkin_INCLUDE_DIRS})
 
-add_executable(JController ./handlers/SubHandler.cpp ./handlers/PubHandler.cpp ./transforms/TransformBroadcaster2.cpp ./nav/PID.cpp ./nav/VelController.cpp ./testing/ServiceHandler.cpp ./testing/JController.cpp ./testing/JCUnitTest.cpp)
+add_executable(JController ./handlers/SubHandler.cpp ./handlers/PubHandler.cpp ./transforms/TransformBroadcaster2.cpp ./nav/logger.cpp ./nav/PID.cpp ./nav/VelController.cpp ./testing/ServiceHandler.cpp ./testing/JController.cpp ./testing/JCUnitTest.cpp)
+
+# add_executable( JController ./nav/logger.cpp ./nav/PID.cpp)
+
 target_link_libraries(JController ${catkin_LIBRARIES} ncurses)
 target_link_libraries(JController ${ncurses++_LIBRARIES}) ## keyboard_mover
 

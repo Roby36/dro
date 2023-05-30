@@ -1,4 +1,6 @@
 
 build/
 devel/
+logs/
+graphs/input
 src/net/net.a
