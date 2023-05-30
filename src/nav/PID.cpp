@@ -1,17 +1,23 @@
 
 #include "PID.h"
 
-PID::PID( const unit_t K, 
-          const unit_t Kp, 
-          const unit_t Ki, 
-          const unit_t Kd, 
-          const int err_sum_terms, 
+// Contructor for PID parameters struct
+PP::PP( unit_t K, 
+        unit_t Kp, 
+        unit_t Ki, 
+        unit_t Kd, 
+        int err_sum_terms)
+        : K(K), 
+          Kp(Kp), 
+          Ki(Ki), 
+          Kd(Kd), 
+          err_sum_terms(err_sum_terms)
+{
+}
+
+PID::PID( const PIDparams params, 
           const std::string logpath )
-            : K(K), 
-              Kp(Kp), 
-              Ki(Ki), 
-              Kd(Kd), 
-              err_sum_terms(err_sum_terms),
+            : params(params.K, params.Kp, params.Ki, params.Kd, params.err_sum_terms),
               m_logger(logpath)
 {
 }
@@ -25,7 +31,7 @@ unit_t PID::curr_err_sum()
     unit_t sum = 0;
     // Iterate back to last term or start
     // Boolean condition sets i = 0 when all terms are desired
-    for (int i = std::max(0, (err_sum_terms != -1)*(curr_err_term - err_sum_terms));
+    for (int i = std::max(0, (params.err_sum_terms != -1)*(curr_err_term - params.err_sum_terms));
              i < curr_err_term;
              i++) {
         sum += err_array[i];
@@ -47,10 +53,10 @@ unit_t PID::step(unit_t next_err, unit_t time_step)
         return 0;
     }
     // Compute and return command
-    unit_t u = Kp * next_err +
-               Ki * curr_err_sum() * time_step +
-               Kd * (next_err - err_array[std::max(0, curr_err_term - 2)]) / time_step +
-               K;
+    unit_t u = params.Kp * next_err +
+               params.Ki * curr_err_sum() * time_step +
+               params.Kd * (next_err - err_array[std::max(0, curr_err_term - 2)]) / time_step +
+               params.K;
     return u;
 }
 
@@ -76,6 +82,12 @@ bool PID::log2file( std::string filename, std::string filedir)
         m_logger.logstr( "PID log2file error: Cannot open file\n");
         return false;
     }
+    #ifdef PIDLOG
+    fprintf(fp, "\n\tK, Kp, Ki, Kd: %f, %f, %f, %f \n", params.K,
+                                                        params.Kp,
+                                                        params.Ki,
+                                                        params.Kd);
+    #endif //PIDLOG
     // Write error data to the file, using a formatting convention
     // that the Python graphing program on the other end will follow
     for (int i = 0; i < curr_err_term; i++) {
@@ -86,16 +98,22 @@ bool PID::log2file( std::string filename, std::string filedir)
     return true;
 }
 
-void PID::reset(const unit_t K, const unit_t Kp, 
-                const unit_t Ki, const unit_t Kd, 
-                const int err_sum_terms)
+void PID::reset( const PIDparams nparams)
 {
     // Reset tracking index to start of array
     curr_err_term = 0;
     // Reset parameters of PID
-    this->K  = K;
-    this->Kp = Kp,
-    this->Ki = Ki,
-    this->Kd = Kd;
-    this->err_sum_terms = err_sum_terms;
+    this->params = PIDparams(nparams.K, nparams.Kp, nparams.Ki, nparams.Kd, nparams.err_sum_terms);
 }
+
+
+#ifdef PIDUT 
+
+int main()
+{
+    PID* tp = new PID( PIDparams(0,0,0,0,-1));
+    printf("Compiled & initialized!\n");
+    delete (tp);
+}
+
+#endif //PIDUT

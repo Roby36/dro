@@ -21,7 +21,7 @@ int main(int argc, char** argv)
     // Initialize velocity publisher handler
     PubHandler <geometry_msgs::TwistStamped> vel_ph (&nh, ::cmd_vel_topic);
     // Initialize PID controller
-    PID pid_ctr (0.0, 2.0, 0.0, 3.0);
+    PID pid_ctr ( PIDparams(0.0, 2.0, 0.0, 3.0, -1));
     // Initialize velocity controller
     VelController vel_ctr (&vel_ph, &laser_sh, &odom_sh, &pid_ctr);
     // Finally, initialize JController

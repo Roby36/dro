@@ -31,20 +31,11 @@ JController::handleCommand(char cmd)
         case Keypress::BACKWARDS: l_vel.setX( -lv.getX()); break;
         case Keypress::RIGHT:     l_vel.setY( -lv.getY()); break;
         case Keypress::LEFT:      l_vel.setY(  lv.getY()); break;
+        // Navigation tests
         case Keypress::NAVTEST:   navtest();               break;
         case Keypress::BUG2TEST:  bug2test();              break;
-
-        // Pid tests (hard-coded)
-        case '1': pidTest(0.01);    break;
-        case '2': pidTest(0.02);    break;
-        case '3': pidTest(0.03);    break;
-        case '4': pidTest(0.04);    break;
-        case '5': pidTest(0.05);    break;
-        case '6': pidTest(0.06);    break;
-        case '7': pidTest(0.07);    break;
-        case '8': pidTest(0.08);    break;
-        case '9': pidTest(0.09);    break;
-
+        case Keypress::ZNTEST:    ZNtest();                break;
+        // Quitting command
         case Keypress::QUIT:      return true;
         default:                                           break;
     }
@@ -81,10 +72,15 @@ void JController::navtest()
 {
     ROS_INFO_STREAM("Starting navtest");
     // Hard-coded navigation test for the VelController module
-    vel_ctr->reset_PID(0.0, 0.3, 0.0, 0.4);
+    vel_ctr->reset_PID( PIDparams(0.0, 0.3, 0.0, 0.4, -1));
     while (ros::ok()) {
-        vel_ctr->follow_wall(4.0, 0.0, M_PI/4.0, 3.0, -M_PI/2.0, 3.0, 
-            0.5, 0.5, 0.1, 100);
+        vel_ctr->follow_wall(ScanParameters(0.0, M_PI/4.0, 4.0),  
+                             ScanParameters(-M_PI/2.0, 3.0, 3.0),
+                             tf::Vector3(0.5, 0.0, 0.0),
+                             tf::Vector3(0.0, 0.0, 0.5),
+                             0.1,
+                             100
+                            );
     }
     ROS_INFO_STREAM("Ending navtest");
 }
@@ -99,15 +95,44 @@ void JController::bug2test()
                   tf::Vector3(0.0, 0.0, 0.5),
                   tf::Vector3(0.1, 0.1, 0.1),
                   tf::Vector3(1.0, 1.0, 1.0),
+                  PIDparams(0.0, 0.2, 0.0, 0.2, -1),
+                  ScanParameters(0.0, M_PI/4.0, 4.0),
+                  ScanParameters(-M_PI/2.0, 3.0, 3.0),
+                  tf::Vector3(0.5, 0.0, 0.0),
+                  tf::Vector3(0.0, 0.0, 0.5),
+                  0.1,
+                  100,
                   M_PI/8.0,
                   3.0,
                   100);
     ROS_INFO_STREAM("Ending bug2test");
 }
 
-void JController::pidTest(double Kp, int dur)
+void JController::ZNtest()
 {
-    vel_ctr->PID_periodic_test(Kp, dur);
+    vel_ctr-> ZN_tuning_test("ZN_test.txt",
+                            0.10,
+                            0.20,
+                            0.01,
+                            600.00,
+                            tf::Vector3(10.0, 10.0, 0), // z ignored
+                            "/map",
+                            //! Parameters for follow_wall()
+                            ScanParameters(0.0, M_PI/8.0, 1.0), // obstacle
+                            ScanParameters(-M_PI/2.0, 3.0, 5.0), // wall
+                            tf::Vector3(0.5, 0.0, 0.0), // linear velocity
+                            tf::Vector3(0.0, 0.0, 0.5), // angular velocity
+                            0.1,  // dt
+                            100, // loop_frequency
+                            //! Parameters for rotating drone after PID failure
+                            tf::Vector3(0.1, 0.1, 0.1), //ang_tol
+                            tf::Vector3(0.0, 0.0, 0.5), //ang_vel 
+                            100,          // rot_frequency
+                            //! Parameters for drone translation after PID failure
+                            0.2,  // lin_vel
+                            1.0,  // wd_tol
+                            100   // freq
+                            ); 
 }
 
 //!HARD-CODED NAVIGATION TESTS

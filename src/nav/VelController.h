@@ -15,30 +15,17 @@
 #include "logger.h"
 #include "PID.h"
 
-//! PID parameters for obstacle circumvention
-// HARDCODED - must be generalized into struct
-namespace PID_settings
-{
-  // PID parameters
-  const double K  = 0.0;
-  const double Kp = 0.2;
-  const double Ki = 0.0;
-  const double Kd = 0.2;
-  const double err_sum_terms = -1;
-  // follow_wall() function, using PID
-  const double obst_thresh_distance = 3.0;
-  const double obst_scan_angle      = 0.0;
-  const double obst_ang_range       = M_PI/8.0;
-  const double wall_goal_distance   = 5.0;
-  const double wall_scan_angle      = -M_PI/2.0;
-  const double wall_ang_range       = 3.0; // just below PI to avoid discontinuities
-  const double linear_velocity      = 0.5;
-  const double angular_velocity     = 0.5;
-  const double dt                   = 0.1;
-  const int    loop_frequency       = 100;
-};
-// HARDCODED - must generalize PID_settings into struct
-//!
+// Struct defining general parameters for a 2-D laser scan
+typedef struct SP {
+
+  double ang_midpoint;
+  double ang_range;
+  double distance;
+
+  SP( double ang_midpoint, double ang_range, double distance)
+    : ang_midpoint(ang_midpoint), ang_range(ang_range), distance(distance) {}
+
+} ScanParameters;
 
 class VelController
 {
@@ -104,49 +91,79 @@ class VelController
   *   This will be important since Bug2 & Bug3 are built directly on top
   *   of this algorithm.
   */
-  void follow_wall(const double obst_thresh_distance,
-                  const double obst_scan_angle,
-                  const double obst_ang_range,
-                  const double wall_goal_distance,
-                  const double wall_scan_angle,
-                  const double wall_ang_range,
-                  const double linear_velocity,
-                  const double angular_velocity,
-                  const double pid_dt, // PID parameters:
-                  const int    loop_frequency);
+  void follow_wall( const ScanParameters& osp,
+                    const ScanParameters& wsp,
+                    const tf::Vector3& lv,
+                    const tf::Vector3& av,
+                    const double dt, 
+                    const int    loop_frequency,
+                  //! Optional parameter to assess pid success/ failure
+                    bool& pid_success);
+  
+  //** Overloaded version of follow_wall to make last parameter optional **//
+  void follow_wall( const ScanParameters& osp,
+                    const ScanParameters& wsp,
+                    const tf::Vector3& lv,
+                    const tf::Vector3& av,
+                    const double dt, 
+                    const int    loop_frequency);
   
   /** ALGORITHM: Bug2 
   *   This algorithm uses the two algorithms above, and parameters in 
   *   PIDsettings, to implement the Bug2 algorithm seen in class 
   */
-  bool Bug2( const std::string& goal_frame_id,
-              const tf::Vector3& goal_point,
+  bool Bug2(  const std::string& goal_frame_id,
+              const tf::Vector3& goal_point,     
               const tf::Vector3& goal_tol,
               const tf::Vector3& linear_velocity,
               const tf::Vector3& angular_velocity,
               const tf::Vector3& ang_tol,
               const tf::Vector3& line_tol,
+            //! Parameters for PID
+              const PIDparams& pid_params,
+            //! Parameters for follow_wall()
+              const ScanParameters& osp,
+              const ScanParameters& wsp,
+              const tf::Vector3& lv,
+              const tf::Vector3& av,
+              const double dt, 
+              const int    loop_frequency,
+            //!
               const double       obst_ang_range,
               const double       obst_thresh_distance,
               const int          frequency);
   
   //** Reset internal PID controller **//
-  void reset_PID(const double K,
-                const double Kp,
-                const double Ki,
-                const double Kd,
-                const int pid_error_sum_terms = -1);
+  void reset_PID( const PIDparams nparams);
   
-  /** PID periodic test
-  * This function performs a PID test by running the follow_wall()
-  * function on a constant shape (e.g. straight wall, cylinder)
-  * for an arbitrary time. The aim is to determine the ultimate
-  * gain and ultimate oscillation period using the resulting error graph.
-  * This can then be used to apply the Ziegler-Nichols method for PID tuning.
+  /** ZN_tuning_test
+  * This function performs the Ziegler Nichols tuning process dynamically.
+  * Proportional terms in a given range are tested and the values able to
+  * oscillate sustainably for a given time are recorded. The minimum value 
+  * able to constantly oscillate can then be used to tune the PID controller.
   */
-  void PID_periodic_test( const double Kp,
-                          const int dur, 
-                          std::string outfile = "PID_test.txt");
+  bool ZN_tuning_test(std::string  outfile,
+                      const double Kp_start,
+                      const double Kp_end,
+                      const double Kp_step,
+                      const double time_goal,
+                      const tf::Vector3& obst_pos,
+                      const std::string& obst_frame_id,
+                      //! Parameters for follow_wall()
+                      const ScanParameters& osp,
+                      const ScanParameters& wsp,
+                      const tf::Vector3& lv,
+                      const tf::Vector3& av,
+                      const double dt, 
+                      const int    loop_frequency,
+                      //! Parameters for rotating drone after PID failure
+                      const tf::Vector3& ang_tol, 
+                      const tf::Vector3& ang_vel, 
+                      const int          rot_frequency,
+                      //! Parameters for drone translation after PID failure
+                      const double lin_vel,
+                      const double wd_tol,
+                      const int freq);
 
   //** private attributes/functions **//
   private:
@@ -183,8 +200,10 @@ class VelController
                                     int& max_index);
   static bool is_within_range(const sensor_msgs::LaserScan& laser_msg, const int i);
   static double min_distance(const sensor_msgs::LaserScan& msg,
-                              const double min_scan_angle, 
-                              const double max_scan_angle);
+                             const double min_scan_angle, 
+                             const double max_scan_angle);
+  double min_wall_distance( const sensor_msgs::LaserScan& laser_msg,
+                            const ScanParameters& wsp);
   static void getRPY(const nav_msgs::Odometry& odom_msg, 
                       double& roll,
                       double& pitch,
@@ -195,19 +214,19 @@ class VelController
   //** Geometrical functions **//
   static inline double absolute_value(double x);
   static inline bool is_close( const tf::Vector3& v1,
-                                const tf::Vector3& v2,
-                                const tf::Vector3& tol);
+                               const tf::Vector3& v2,
+                               const tf::Vector3& tol);
   static bool intersects_line( const tf::Vector3& start,
-                                const tf::Vector3& goal,
-                                const tf::Vector3& curr_pos,
-                                const tf::Vector3& tol);
+                               const tf::Vector3& goal,
+                               const tf::Vector3& curr_pos,
+                               const tf::Vector3& tol);
   void inline update_position_vector( tf::Vector3& v);
   static inline double xy_distance( tf::Vector3& v1, tf::Vector3& v2);
   //** Motion functions (publishing) **//
   void stop();
   void rotate( const tf::Vector3& targetOr, 
-                const tf::Vector3& tol, 
-                const tf::Vector3& ang_vel,  
-                int frequency);
+               const tf::Vector3& tol, 
+               const tf::Vector3& ang_vel,  
+               int frequency);
   
 };

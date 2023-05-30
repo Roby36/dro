@@ -27,13 +27,13 @@ bool Logger::logstr(const std::string str)
 {
     // Log to rosout and/or logging file, based on compiler flags
     #ifdef NAVLOUT
-        ROS_INFO(str.c_str());
+        ROS_INFO("%s", str.c_str());
     #endif // NAVLOUT
     #ifdef NAVLFILE
         if (logfile == NULL) {
             return false; // meaning logfile couldn't be opened successfully at contruction
         }
-        fprintf(logfile, str.c_str());
+        fprintf(logfile, "%s", str.c_str());
     #endif // NAVLFILE
         return true; // meaning we printed successfully to log file
 }
