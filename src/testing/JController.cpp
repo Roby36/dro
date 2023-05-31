@@ -9,7 +9,7 @@ void JController::publish_checked_velocities(tf::Vector3 l_vel, tf::Vector3 a_ve
     geometry_msgs::TwistStamped cmd_vel_msg;
     // Pass velocity and laser messages to VelController module
     vel_ctr->omnidirectional_obstacle_check(l_vel, a_vel, input_vel_frame_id,
-        ang_range, thresh_distance, laser_sh->currMsg(), cmd_vel_msg);
+                                            laser_sh->currMsg(), cmd_vel_msg);
     // Stamp & publish the resulting message
     cmd_vel_msg.header.stamp = ros::Time::now();
     vel_ph->publish(cmd_vel_msg);
@@ -35,7 +35,7 @@ JController::handleCommand(char cmd)
         case Keypress::NAVTEST:   navtest();               break;
         case Keypress::BUG2TEST:  bug2test();              break;
         case Keypress::ZNTEST:    ZNtest();                break;
-        // Reproduce bugs by hard-coding internal VelController functions
+        // Reproduce bugs here by hard-coding internal VelController functions
         case Keypress::ROTATE:    rotateYaw(3.73,
                                             0.1,
                                             0.5,
@@ -126,24 +126,13 @@ void JController::bug2test()
 void JController::ZNtest()
 {
     vel_ctr-> ZN_tuning_test("ZN_test.txt",
-                            0.022,
+                            0.028,
                             0.05,
                             0.002,
                             600.00,
-                            //! Parameters for follow_wall()
-                            ScanParameters(0.0,       M_PI/8.0, 1.1), // obstacle (THRESH > RANGE_MIN!)
-                            ScanParameters(-M_PI/2.0, 3.0, 5.0), // wall
-                            tf::Vector3(0.5, 0.0, 0.0), // linear velocity
+                        //! Parameters for follow_wall()
                             0.1,  // dt
-                            100, // loop_frequency
-                            //! Parameters for rotating drone after PID failure
-                            0.2, //ang_tol
-                            0.2, //ang_vel 
-                            100,          // rot_frequency
-                            //! Parameters for drone translation after PID failure
-                            0.2,  // lin_vel
-                            1.0,  // wd_tol
-                            100   // freq
+                            0.2  // side_vel
                             ); 
 }
 

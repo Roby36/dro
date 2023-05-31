@@ -6,18 +6,34 @@ VelController::VelController(PubHandler <geometry_msgs::TwistStamped> * const ve
                             SubHandler <sensor_msgs::LaserScan>      * const laser_sh,
                             SubHandler <nav_msgs::Odometry>          * const odom_sh,
                             PID* pid_ctr,
+                            //! Navigation parameters
+                            const tf::Vector3    linear_velocity,
+                            const tf::Vector3    point_tol,
+                            const double         angular_velocity,
+                            const double         ang_tol,
+                            const ScanParameters osp,
+                            const ScanParameters wsp,
+                            const int            loop_frequency,
+                            //!
                             const std::string working_frame_id,
                             const std::string output_vel_frame_id,
                             const std::string input_laser_frame_id,
                             const std::string logpath)
-                            :   working_frame_id(working_frame_id),
-                                output_vel_frame_id(output_vel_frame_id),
-                                input_laser_frame_id(input_laser_frame_id),
-                                vel_ph(vel_ph), 
-                                laser_sh(laser_sh), 
-                                odom_sh(odom_sh), 
-                                pid_ctr(pid_ctr),
-                                m_logger(logpath) 
+                                :   working_frame_id(working_frame_id),
+                                    output_vel_frame_id(output_vel_frame_id),
+                                    input_laser_frame_id(input_laser_frame_id),
+                                    linear_velocity(linear_velocity),
+                                    point_tol(point_tol),
+                                    angular_velocity(angular_velocity),
+                                    ang_tol(ang_tol),
+                                    osp(osp),
+                                    wsp(wsp),
+                                    loop_frequency(loop_frequency),
+                                    vel_ph(vel_ph), 
+                                    laser_sh(laser_sh), 
+                                    odom_sh(odom_sh), 
+                                    pid_ctr(pid_ctr),
+                                    m_logger(logpath) 
 {
 }
 
@@ -30,10 +46,6 @@ VelController::~VelController()
 bool VelController::omnidirectional_obstacle_check(const tf::Vector3& lv, 
                                                    const tf::Vector3& av,
                                                    const std::string& input_vel_frame_id,
-
-                                                   const double ang_range,
-                                                   const double thresh_distance,
-
                                                    const sensor_msgs::LaserScan& laser_msg,
                                                     geometry_msgs::TwistStamped& cmd_vel_msg)
 {
@@ -61,17 +73,17 @@ bool VelController::omnidirectional_obstacle_check(const tf::Vector3& lv,
     // Identify requested direction of movement wrt working frame
     double dir_ang = atan2(wf_lv.getY(), wf_lv.getX());
     int min_index = 0, max_index = 0;
-    ranges_indices(laser_msg, dir_ang - (ang_range / 2.0), dir_ang + (ang_range / 2.0),
+    ranges_indices(laser_msg, dir_ang - (osp.ang_range / 2.0), dir_ang + (osp.ang_range / 2.0),
                     min_index, max_index);
-    // Iterate through all values in array
+    //! Still weak iteration: see min_distance for more extensive checks
     for (int i = min_index; i < max_index; i++) {
         // If one single obstacle detected within threshhold distance, stop drone
-        if (laser_msg.ranges[i] < thresh_distance && is_within_range(laser_msg, i)) {
-            // If obstacle too close, return false without publishing velocities
+        if (laser_msg.ranges[i] < osp.distance && is_within_range(laser_msg, i)) {
+            // If obstacle too close, return false without filling linear component
             #ifdef OBSTLOG
             m_logger.logstr( std::string("omnidirectional_obstacle_check: ") + 
                              std::string("Obstacle detected within thresh_distance ") +
-                    std::to_string(thresh_distance) + " at laser scan angle "  +
+                    std::to_string(osp.distance) + " at laser scan angle "  +
                     std::to_string(i*laser_msg.angle_increment + laser_msg.angle_min) +
                     std::string(" and distance ") + std::to_string(laser_msg.ranges[i]) );
             #endif //OBSTLOG
@@ -83,20 +95,9 @@ bool VelController::omnidirectional_obstacle_check(const tf::Vector3& lv,
     return true;
 }
 
-void VelController::follow_wall(const ScanParameters& osp,
-                                const ScanParameters& wsp,
-                                const tf::Vector3& lv,
-                                const double dt, 
-                                const int loop_frequency,
-                            //! handle_missed_wall parameters
-                                //! Parameters for drone rotation
-                                const double ang_tol, 
-                                const double ang_vel, 
-                                const int    rot_frequency,
-                                //! Parameters for drone translation after PID failure
-                                const double lin_vel,
-                                const double wd_tol,
-                                const int freq,
+void VelController::follow_wall(const double dt, 
+                            //! Drone translation after PID failure
+                                const double side_vel,
                             //! Optional parameter to assess pid success/ failure
                                 bool& pid_success)                  
 {
@@ -112,16 +113,15 @@ void VelController::follow_wall(const ScanParameters& osp,
     if (curr_wall_distance >= laser_msg.range_max) {
         m_logger.logstr("follow_wall: lost wall contact, rotating...\n");
         pid_success = false; // Flag PID failure
-        cmd_vel_msg.twist.angular.z = ang_vel;
-        ros::Rate rate(rot_frequency);
+        cmd_vel_msg.twist.angular.z = angular_velocity;
+        ros::Rate rate(loop_frequency);
         // Keep rotating until we are able to detect and obstacle
         while (ros::ok() && !get_closest_obstacle_position(obst_pos, obst_frame_id)) {
             vel_ph->publish(cmd_vel_msg);
             rate.sleep();
         }
         m_logger.logstr("follow_wall: got wall contact back, handling missed wall...\n");
-        handle_missed_wall(obst_pos, obst_frame_id, wsp, ang_tol, ang_vel, rot_frequency,
-            lin_vel, wd_tol, freq);
+        handle_missed_wall(obst_pos, obst_frame_id, side_vel);
         return;
     }
     // Compute resulting error
@@ -134,8 +134,8 @@ void VelController::follow_wall(const ScanParameters& osp,
     // Let the drone move throughout the given time step
     while (ros::ok() && ((ros::Time::now() < startTime + loopDuration))) {
         // As soon as obstacle check fails, handle close wall and break loop 
-        if (!omnidirectional_obstacle_check(lv, pid_av, working_frame_id, 
-                        osp.ang_range, osp.distance, laser_sh->currMsg(), cmd_vel_msg))
+        if (!omnidirectional_obstacle_check(linear_velocity, pid_av, working_frame_id, 
+                                            laser_sh->currMsg(), cmd_vel_msg))
         {
             pid_success = false; // Flag PID failure
             m_logger.logstr("follow_wall: detected close obstacle, handling missed wall...\n");
@@ -145,8 +145,7 @@ void VelController::follow_wall(const ScanParameters& osp,
             // We assume this function to return successfully, since an obstacle wa sjust detected
             get_closest_obstacle_position(obst_pos, obst_frame_id);
             // Handle the obstacle
-            handle_missed_wall( obst_pos, obst_frame_id, wsp, ang_tol, ang_vel, rot_frequency,
-                                lin_vel, wd_tol, freq);
+            handle_missed_wall( obst_pos, obst_frame_id, side_vel);
             return; 
         }
         // Stamp & publish the resulting message
@@ -159,54 +158,20 @@ void VelController::follow_wall(const ScanParameters& osp,
 }
 
 //** Overloaded copy **//
-void VelController::follow_wall( const ScanParameters& osp,
-                    const ScanParameters& wsp,
-                    const tf::Vector3& lv,
-                    const double dt, 
-                    const int    loop_frequency,
-                //! handle_missed_wall parameters
-                    //! Parameters for drone rotation
-                    const double ang_tol, 
-                    const double ang_vel, 
-                    const int    rot_frequency,
-                    //! Parameters for drone translation after PID failure
-                    const double lin_vel,
-                    const double wd_tol,
-                    const int freq)
+void VelController::follow_wall(const double dt, 
+                                const double side_vel)
 {
     bool pid_success = true;
-    follow_wall(osp, wsp, lv, dt, loop_frequency, ang_tol, ang_vel, rot_frequency,
-                lin_vel, wd_tol, freq, pid_success);
+    follow_wall(dt, side_vel, pid_success);
 }
 
 bool VelController::Bug2( const std::string& goal_frame_id,
                           const tf::Vector3& goal_point,     
-                          const tf::Vector3& goal_tol,
-                          const tf::Vector3& linear_velocity,
-                          const double angular_velocity,
-                          const double angular_tol,
-                          const tf::Vector3& line_tol,
                     //! Parameters for PID
                           const PIDparams& pid_params,
                     //! Parameters for follow_wall phase
-                            const ScanParameters& osp,
-                            const ScanParameters& wsp,
-                            const tf::Vector3& lv,
-                            const double dt, 
-                            const int    loop_frequency,
-                        //! handle_missed_wall parameters
-                            //! Parameters for drone rotation
-                            const double ang_tol, 
-                            const double ang_vel, 
-                            const int    rot_frequency,
-                            //! Parameters for drone translation after PID failure
-                            const double lin_vel,
-                            const double wd_tol,
-                            const int freq,
-                    //! Parameters for obstacle avoidance during navigation phase
-                        const double       obst_ang_range,
-                        const double       obst_thresh_distance,
-                        const int          frequency)
+                          const double dt, 
+                          const double side_vel)
 {
     // Retrieve starting position (in odom frame)
     tf::Vector3 start;
@@ -222,8 +187,8 @@ bool VelController::Bug2( const std::string& goal_frame_id,
                         +  std::to_string(goal.getY()) + ", " + std::to_string(goal.getZ()) + " )\n");   
     // Rotate toward goal point
     rotateYaw( atan2(goal.getY() - start.getY(), goal.getX() - start.getX()), 
-                angular_tol, angular_velocity, frequency);
-    ros::Rate rate (frequency);
+                ang_tol, angular_velocity, loop_frequency);
+    ros::Rate rate (loop_frequency);
     geometry_msgs::TwistStamped cmd_vel_msg;
     tf::Vector3 curr_pos;
     tf::Vector3 obst_pos;
@@ -235,8 +200,7 @@ bool VelController::Bug2( const std::string& goal_frame_id,
         laser_sh->update_msg();
         // If no obstacle, move towards goal and continue loop
         if (omnidirectional_obstacle_check(linear_velocity, tf::Vector3(0.0, 0.0, 0.0), 
-                    working_frame_id, obst_ang_range, obst_thresh_distance, 
-                    laser_sh->currMsg(), cmd_vel_msg))
+                    working_frame_id, laser_sh->currMsg(), cmd_vel_msg))
         {
             vel_ph->publish(cmd_vel_msg);
             continue;
@@ -246,30 +210,24 @@ bool VelController::Bug2( const std::string& goal_frame_id,
         update_position_vector(curr_pos);
         memcpy(&obst_pos, &curr_pos, sizeof(tf::Vector3)); // Record starting position
         pid_ctr->reset( //! PID parameters
-                        pid_params
-                        //!
-                      );
+                        pid_params );   
         do {
             update_position_vector(curr_pos);
-            follow_wall( //! follow_wall() general parameters
-                        osp, wsp, lv, dt, loop_frequency,
-                            //! handle_missed_wall parameters
-                            ang_tol, ang_vel, rot_frequency, lin_vel, wd_tol, freq
-                        );
+            follow_wall(dt, side_vel);
             // Check if we left the tolerance level from the line
-            if (close_obstacle && !intersects_line(start, goal, curr_pos, line_tol)) {
+            if (close_obstacle && !intersects_line(start, goal, curr_pos, point_tol)) {
                 close_obstacle = false;
             }
             // Check if we intersect line after leaving obstacle,
             // and if we are closer to goal than before
-        } while (ros::ok() && (close_obstacle || !intersects_line(start, goal, curr_pos, line_tol) ||
+        } while (ros::ok() && (close_obstacle || !intersects_line(start, goal, curr_pos, point_tol) ||
                                 xy_distance(curr_pos, goal) > xy_distance(obst_pos, goal)));
         // After surpassing obstacle, rotate again towards goal
         rotateYaw( atan2(goal.getY() - curr_pos.getY(), goal.getX() - curr_pos.getX()), 
-                    angular_tol, angular_velocity, frequency);
+                    ang_tol, angular_velocity, loop_frequency);
         // Check if we reached goal (x,y) coordinates at the end of loop
-    } while (ros::ok() && (absolute_value(curr_pos.getX() - goal_point.getX()) > goal_tol.getX() ||
-                           absolute_value(curr_pos.getY() - goal_point.getY()) > goal_tol.getY()) );
+    } while (ros::ok() && (absolute_value(curr_pos.getX() - goal_point.getX()) > point_tol.getX() ||
+                           absolute_value(curr_pos.getY() - goal_point.getY()) > point_tol.getY()) );
     return true;
 }
 
@@ -279,20 +237,8 @@ bool VelController::ZN_tuning_test( std::string  outfile,
                                     const double Kp_step,
                                     const double time_goal,
                                 //! Parameters for follow_wall()
-                                    const ScanParameters& osp,
-                                    const ScanParameters& wsp,
-                                    const tf::Vector3& lv,
                                     const double dt, 
-                                    const int    loop_frequency,
-                                    //! Parameters for rotating drone after PID failure
-                                    const double ang_tol, 
-                                    const double ang_vel, 
-                                    const int    rot_frequency,
-                                    //! Parameters for drone translation after PID failure
-                                    const double lin_vel,
-                                    const double wd_tol,
-                                    const int freq
-                                   )
+                                    const double side_vel)
 {
     bool success = false; // whether at least one pid configuration passed the test 
     m_logger.logstr("Starting ZN_tuning_test\n" );
@@ -307,8 +253,7 @@ bool VelController::ZN_tuning_test( std::string  outfile,
         while (ros::ok()) {
             double currTime = ros::Time::now().toSec();
             bool pid_success = true;
-            follow_wall(osp, wsp, lv, dt, loop_frequency, ang_tol, ang_vel, 
-                        rot_frequency, lin_vel, wd_tol, freq, pid_success);
+            follow_wall(dt, side_vel, pid_success);
             // Handle PID failure
             if (!pid_success) {
                 m_logger.logstr("ZN_tuning_test failed for Kp = " + std::to_string(Kp_curr) +
@@ -367,15 +312,8 @@ bool VelController::get_closest_obstacle_position(tf::Vector3& obst_pos,
 
 bool VelController::handle_missed_wall( const tf::Vector3& obst_pos,
                                         const std::string& obst_frame_id,
-                                        const ScanParameters& wsp,
-                                        //! Parameters for drone rotation
-                                        const double ang_tol, 
-                                        const double ang_vel, 
-                                        const int    rot_frequency,
-                                        //! Parameters for drone translation after PID failure
-                                        const double lin_vel,
-                                        const double wd_tol,
-                                        const int freq)
+                                    //! Drone translation after PID failure
+                                        const double side_vel)
 {
     stop(); // immediately
     // Get obstacle position in odom frame (to later compare with odometry msg)
@@ -390,16 +328,17 @@ bool VelController::handle_missed_wall( const tf::Vector3& obst_pos,
     const nav_msgs::Odometry odom_msg = odom_sh->currMsg();
     rotateYaw( atan2(obst_pos_odom.getY() - odom_msg.pose.pose.position.y,
                      obst_pos_odom.getX() - odom_msg.pose.pose.position.x) + M_PI/2,
-                ang_tol, ang_vel, rot_frequency);
+                ang_tol, angular_velocity, loop_frequency);
     // Record starting wall distance
     laser_sh->update_msg();
     double start_wd = min_wall_distance(laser_sh->currMsg(), wsp);
     double curr_wd  = start_wd;
     // Identify necessary direction of motion to reach goal distance from wall
-    double y_vel = (wsp.distance > start_wd) ? lin_vel : -lin_vel;
+    double y_vel   = (wsp.distance > start_wd) ? side_vel : -side_vel;
     geometry_msgs::TwistStamped cmd_vel_msg; // prepare velocity message
-    ros::Rate rate (freq);
-    while (ros::ok() && (absolute_value(curr_wd - wsp.distance) > wd_tol)) {
+    ros::Rate rate (loop_frequency);
+    while (ros::ok() && (absolute_value(curr_wd - wsp.distance) // compare with xy-magnitude
+                > std::sqrt( pow(point_tol.getX(), 2) + pow(point_tol.getY(), 2)))) {
         rate.sleep();
         // Even if we assume no obstacle, this function is still necessary
         // to translate commands to appropriate frame
@@ -408,8 +347,6 @@ bool VelController::handle_missed_wall( const tf::Vector3& obst_pos,
         omnidirectional_obstacle_check( tf::Vector3(0.0, y_vel, 0.0),
                                         tf::Vector3(0.0, 0.0,   0.0),
                                         working_frame_id,
-                                        0.0, // this disables obstacle detection
-                                        laser_msg.range_min,
                                         laser_msg,
                                         cmd_vel_msg);
         vel_ph->publish(cmd_vel_msg);
