@@ -21,7 +21,7 @@ int main(int argc, char** argv)
     // Initialize velocity publisher handler
     PubHandler <geometry_msgs::TwistStamped> vel_ph (&nh, ::cmd_vel_topic);
     // Initialize PID controller
-    PID pid_ctr ( PIDparams(0.0, 2.0, 0.0, 3.0, -1));
+    PID pid_ctr ( PIDparams(0.0, 0.0, 0.0, 0.0, -1));
     // Initialize velocity controller
     VelController vel_ctr (&vel_ph, 
                            &laser_sh, 
@@ -32,7 +32,7 @@ int main(int argc, char** argv)
                            0.5,          // angular_velocity
                            0.1,          // ang_tol     
                            ScanParameters(0.0,       M_PI/2.0, 2.0), // osp
-                           ScanParameters(-M_PI/2.0, 3.0,      5.0), // wsp
+                           ScanParameters(-M_PI/2.0, 3.0,      8.0), // wsp
                            100 //loop_frequency
                         );
     // Finally, initialize JController

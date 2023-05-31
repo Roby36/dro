@@ -85,7 +85,8 @@ bool VelController::omnidirectional_obstacle_check(const tf::Vector3& lv,
                              std::string("Obstacle detected within thresh_distance ") +
                     std::to_string(osp.distance) + " at laser scan angle "  +
                     std::to_string(i*laser_msg.angle_increment + laser_msg.angle_min) +
-                    std::string(" and distance ") + std::to_string(laser_msg.ranges[i]) );
+                    std::string(" and distance ") + std::to_string(laser_msg.ranges[i]) + 
+                    std::string("\n") );
             #endif //OBSTLOG
             return false;
         }
@@ -115,7 +116,7 @@ void VelController::follow_wall(const double dt,
         pid_success = false; // Flag PID failure
         cmd_vel_msg.twist.angular.z = angular_velocity;
         ros::Rate rate(loop_frequency);
-        // Keep rotating until we are able to detect and obstacle
+    //! Assumes that obstacle is still within sensor range!
         while (ros::ok() && !get_closest_obstacle_position(obst_pos, obst_frame_id)) {
             vel_ph->publish(cmd_vel_msg);
             rate.sleep();

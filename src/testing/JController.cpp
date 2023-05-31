@@ -76,23 +76,31 @@ JController::handleKeypress()
 
 void JController::navtest()
 {
-    /* Function needs updating
-
-    ROS_INFO_STREAM("Starting navtest");
-    // Hard-coded navigation test for the VelController module
-    vel_ctr->reset_PID( PIDparams(0.0, 0.3, 0.0, 0.4, -1));
-    while (ros::ok()) {
-        vel_ctr->follow_wall(ScanParameters(0.0, M_PI/4.0, 4.0),  
-                             ScanParameters(-M_PI/2.0, 3.0, 3.0),
-                             tf::Vector3(0.5, 0.0, 0.0),
-                             tf::Vector3(0.0, 0.0, 0.5),
-                             0.1,
-                             100
+    /** IMPORTANT:
+     * These specific PID constants are tuned for the following VelController parameters
+     * (initialized in JCUnitTest module), and require the Gazebo world "PID_test_cyl.world"
+     * 
+        VelController vel_ctr ( &vel_ph, 
+                                &laser_sh, 
+                                &odom_sh, 
+                                &pid_ctr,
+                                tf::Vector3(0.5, 0.0, 0.0),    // linear_velocity
+                                tf::Vector3(0.5, 0.5, 0.5),    // point_tol
+                                0.5,          // angular_velocity
+                                0.1,          // ang_tol     
+                                ScanParameters(0.0,       M_PI/2.0, 2.0), // osp
+                                ScanParameters(-M_PI/2.0, 3.0,      8.0), // wsp
+                                100 //loop_frequency
                             );
+    */
+
+   ROS_INFO_STREAM("Starting navtest");
+    // Hard-coded navigation test for the VelController module (using ZN tuned parameters)
+    vel_ctr->reset_PID( PIDparams(0.0, 0.0072, 0.0002, 0.0675, -1));
+    while (ros::ok()) {
+        vel_ctr->follow_wall(0.1, 0.2);
     }
     ROS_INFO_STREAM("Ending navtest");
-
-    */
 }
 
 void JController::bug2test()
@@ -126,8 +134,8 @@ void JController::bug2test()
 void JController::ZNtest()
 {
     vel_ctr-> ZN_tuning_test("ZN_test.txt",
-                            0.028,
-                            0.05,
+                            0.01,
+                            0.10,
                             0.002,
                             600.00,
                         //! Parameters for follow_wall()

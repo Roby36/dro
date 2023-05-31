@@ -34,7 +34,7 @@ enum Keypress {
     RIGHT     = 'k',
     LEFT      = 'j',
 
-    NAVTEST   = 'T', 
+    NAVTEST   = 'N', 
     BUG2TEST  = 'B',
     PIDTEST   = 'P',
     ROTATE    = 'R',

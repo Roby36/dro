@@ -220,6 +220,7 @@ class VelController
   //** Motion functions (publishing) **//
   void stop();
 
+  public:
   //** Overloaded copies (to make reference parameters optional) **//
   void follow_wall( const double dt, 
                     const double side_vel);
