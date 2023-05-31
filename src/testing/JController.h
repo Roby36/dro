@@ -37,6 +37,7 @@ enum Keypress {
     NAVTEST   = 'T', 
     BUG2TEST  = 'B',
     PIDTEST   = 'P',
+    ROTATE    = 'R',
     ZNTEST    = 'Z',
 
     QUIT      = 'q'
@@ -94,5 +95,9 @@ class JController
     void navtest();
     void bug2test();
     void ZNtest();
+    void rotateYaw( const double input_yaw, 
+                    const double tol, 
+                    const double ang_vel,  
+                    int frequency);
 
 };

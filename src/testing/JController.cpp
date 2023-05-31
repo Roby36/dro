@@ -35,6 +35,12 @@ JController::handleCommand(char cmd)
         case Keypress::NAVTEST:   navtest();               break;
         case Keypress::BUG2TEST:  bug2test();              break;
         case Keypress::ZNTEST:    ZNtest();                break;
+        // Reproduce bugs by hard-coding internal VelController functions
+        case Keypress::ROTATE:    rotateYaw(3.73,
+                                            0.1,
+                                            0.5,
+                                            100
+                                           );              break;
         // Quitting command
         case Keypress::QUIT:      return true;
         default:                                           break;
@@ -70,6 +76,8 @@ JController::handleKeypress()
 
 void JController::navtest()
 {
+    /* Function needs updating
+
     ROS_INFO_STREAM("Starting navtest");
     // Hard-coded navigation test for the VelController module
     vel_ctr->reset_PID( PIDparams(0.0, 0.3, 0.0, 0.4, -1));
@@ -83,50 +91,54 @@ void JController::navtest()
                             );
     }
     ROS_INFO_STREAM("Ending navtest");
+
+    */
 }
 
 void JController::bug2test()
 {
+    /* Function needs updating
+
     ROS_INFO_STREAM("Starting bug2test");
-    vel_ctr->Bug2("map",
-                  tf::Vector3(20.0, 20.0, 20.0),
-                  tf::Vector3(1.0, 1.0, 1.0),
-                  tf::Vector3(0.5, 0.0, 0.0),
-                  tf::Vector3(0.0, 0.0, 0.5),
-                  tf::Vector3(0.1, 0.1, 0.1),
-                  tf::Vector3(1.0, 1.0, 1.0),
-                  PIDparams(0.0, 0.2, 0.0, 0.2, -1),
-                  ScanParameters(0.0, M_PI/4.0, 4.0),
-                  ScanParameters(-M_PI/2.0, 3.0, 3.0),
-                  tf::Vector3(0.5, 0.0, 0.0),
-                  tf::Vector3(0.0, 0.0, 0.5),
-                  0.1,
-                  100,
-                  M_PI/8.0,
-                  3.0,
-                  100);
+    vel_ctr->Bug2("map", // goal_frame_id
+                  tf::Vector3(20.0, 20.0, 20.0), // goal_point
+                  tf::Vector3(1.0, 1.0, 1.0), // goal_tol
+                  tf::Vector3(0.5, 0.0, 0.0), // linear_velocity
+                  0.5, // angular_velocity
+                  0.2, // ang_tol
+                  tf::Vector3(1.0, 1.0, 1.0), // line_tol
+                  PIDparams(0.0, 0.2, 0.0, 0.2, -1), // pid_params
+                  ScanParameters(0.0, M_PI/4.0, 4.0), // osp
+                  ScanParameters(-M_PI/2.0, 3.0, 3.0), // wsp
+                  tf::Vector3(0.5, 0.0, 0.0), // lv
+                  tf::Vector3(0.0, 0.0, 0.5), // av
+                  0.1, // dt
+                  100, // loop_frequency
+                  M_PI/8.0, // obst_ang_range
+                  3.0, // obst_thresh_distance
+                  100 // frequency
+                  ); 
     ROS_INFO_STREAM("Ending bug2test");
+
+    */
 }
 
 void JController::ZNtest()
 {
     vel_ctr-> ZN_tuning_test("ZN_test.txt",
-                            0.10,
-                            0.20,
-                            0.01,
+                            0.022,
+                            0.05,
+                            0.002,
                             600.00,
-                            tf::Vector3(10.0, 10.0, 0), // z ignored
-                            "/map",
                             //! Parameters for follow_wall()
-                            ScanParameters(0.0, M_PI/8.0, 1.0), // obstacle
+                            ScanParameters(0.0,       M_PI/8.0, 1.1), // obstacle (THRESH > RANGE_MIN!)
                             ScanParameters(-M_PI/2.0, 3.0, 5.0), // wall
                             tf::Vector3(0.5, 0.0, 0.0), // linear velocity
-                            tf::Vector3(0.0, 0.0, 0.5), // angular velocity
                             0.1,  // dt
                             100, // loop_frequency
                             //! Parameters for rotating drone after PID failure
-                            tf::Vector3(0.1, 0.1, 0.1), //ang_tol
-                            tf::Vector3(0.0, 0.0, 0.5), //ang_vel 
+                            0.2, //ang_tol
+                            0.2, //ang_vel 
                             100,          // rot_frequency
                             //! Parameters for drone translation after PID failure
                             0.2,  // lin_vel
@@ -135,5 +147,12 @@ void JController::ZNtest()
                             ); 
 }
 
-//!HARD-CODED NAVIGATION TESTS
+void JController::rotateYaw(const double input_yaw, 
+                            const double tol, 
+                            const double ang_vel,  
+                            int frequency)
+{
+    vel_ctr->rotateYaw(input_yaw, tol, ang_vel, frequency);
+}
 
+//!HARD-CODED NAVIGATION TESTS

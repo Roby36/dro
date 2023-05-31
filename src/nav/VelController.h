@@ -94,19 +94,22 @@ class VelController
   void follow_wall( const ScanParameters& osp,
                     const ScanParameters& wsp,
                     const tf::Vector3& lv,
-                    const tf::Vector3& av,
                     const double dt, 
                     const int    loop_frequency,
-                  //! Optional parameter to assess pid success/ failure
-                    bool& pid_success);
-  
-  //** Overloaded version of follow_wall to make last parameter optional **//
-  void follow_wall( const ScanParameters& osp,
-                    const ScanParameters& wsp,
-                    const tf::Vector3& lv,
-                    const tf::Vector3& av,
-                    const double dt, 
-                    const int    loop_frequency);
+
+                //! handle_missed_wall parameters
+                    //! Parameters for drone rotation
+                    const double ang_tol, 
+                    const double ang_vel, 
+                    const int    rot_frequency,
+                    //! Parameters for drone translation after PID failure
+                    const double lin_vel,
+                    const double wd_tol,
+                    const int freq,
+
+                //! Optional parameter to assess pid success/ failure
+                    bool& pid_success
+                    );
   
   /** ALGORITHM: Bug2 
   *   This algorithm uses the two algorithms above, and parameters in 
@@ -116,22 +119,31 @@ class VelController
               const tf::Vector3& goal_point,     
               const tf::Vector3& goal_tol,
               const tf::Vector3& linear_velocity,
-              const tf::Vector3& angular_velocity,
-              const tf::Vector3& ang_tol,
+              const double angular_velocity,
+              const double angular_tol,
               const tf::Vector3& line_tol,
-            //! Parameters for PID
+        //! Parameters for PID
               const PIDparams& pid_params,
-            //! Parameters for follow_wall()
-              const ScanParameters& osp,
-              const ScanParameters& wsp,
-              const tf::Vector3& lv,
-              const tf::Vector3& av,
-              const double dt, 
-              const int    loop_frequency,
-            //!
-              const double       obst_ang_range,
-              const double       obst_thresh_distance,
-              const int          frequency);
+  
+        //! Parameters for follow_wall phase
+                const ScanParameters& osp,
+                const ScanParameters& wsp,
+                const tf::Vector3& lv,
+                const double dt, 
+                const int    loop_frequency,
+            //! handle_missed_wall parameters
+                //! Parameters for drone rotation
+                const double ang_tol, 
+                const double ang_vel, 
+                const int    rot_frequency,
+                //! Parameters for drone translation after PID failure
+                const double lin_vel,
+                const double wd_tol,
+                const int freq,
+        //! Parameters for obstacle avoidance during navigation phase
+            const double       obst_ang_range,
+            const double       obst_thresh_distance,
+            const int          frequency);
   
   //** Reset internal PID controller **//
   void reset_PID( const PIDparams nparams);
@@ -147,23 +159,26 @@ class VelController
                       const double Kp_end,
                       const double Kp_step,
                       const double time_goal,
-                      const tf::Vector3& obst_pos,
-                      const std::string& obst_frame_id,
-                      //! Parameters for follow_wall()
+                    //! Parameters for follow_wall()
                       const ScanParameters& osp,
                       const ScanParameters& wsp,
                       const tf::Vector3& lv,
-                      const tf::Vector3& av,
                       const double dt, 
                       const int    loop_frequency,
                       //! Parameters for rotating drone after PID failure
-                      const tf::Vector3& ang_tol, 
-                      const tf::Vector3& ang_vel, 
-                      const int          rot_frequency,
+                      const double ang_tol, 
+                      const double ang_vel,  
+                      const int    rot_frequency,
                       //! Parameters for drone translation after PID failure
                       const double lin_vel,
                       const double wd_tol,
                       const int freq);
+
+  //** We only use the yaw rotational degree of freedom, hence no vector inputs **//
+  void rotateYaw( const double input_yaw, 
+                  const double tol, 
+                  const double ang_vel,  
+                  int frequency);
 
   //** private attributes/functions **//
   private:
@@ -192,16 +207,34 @@ class VelController
 
   //** Private helper-function used internally by the module **//
 
+  bool get_closest_obstacle_position(tf::Vector3& obst_pos,
+                                     std::string& obst_frame_id);
+  bool handle_missed_wall(const tf::Vector3& obst_pos,
+                          const std::string& obst_frame_id,
+                          const ScanParameters& wsp,
+                          //! Parameters for drone rotation
+                          const double ang_tol, 
+                          const double ang_vel, 
+                          const int    rot_frequency,
+                          //! Parameters for drone translation after PID failure
+                          const double lin_vel,
+                          const double wd_tol,
+                          const int freq);
   //** Message-processing functions (from subscribers) **//
   static inline void ranges_indices(const sensor_msgs::LaserScan& laser_msg,
                                     const double min_scan_angle,
                                     const double max_scan_angle,
                                     int& min_index,
                                     int& max_index);
+  static inline void bring2range( const double angle_min,
+                                  const double angle_max,
+                                  double& angle);
   static bool is_within_range(const sensor_msgs::LaserScan& laser_msg, const int i);
-  static double min_distance(const sensor_msgs::LaserScan& msg,
-                             const double min_scan_angle, 
-                             const double max_scan_angle);
+  static double min_distance(const sensor_msgs::LaserScan& laser_msg,
+                             double min_scan_angle, 
+                             double max_scan_angle,
+                          //! Optional parameter keeping angle of minimum distance
+                             double& min_dist_ang);
   double min_wall_distance( const sensor_msgs::LaserScan& laser_msg,
                             const ScanParameters& wsp);
   static void getRPY(const nav_msgs::Odometry& odom_msg, 
@@ -224,9 +257,23 @@ class VelController
   static inline double xy_distance( tf::Vector3& v1, tf::Vector3& v2);
   //** Motion functions (publishing) **//
   void stop();
-  void rotate( const tf::Vector3& targetOr, 
-               const tf::Vector3& tol, 
-               const tf::Vector3& ang_vel,  
-               int frequency);
-  
+
+  //** Overloaded copies (to make reference parameters optional) **//
+  void follow_wall( const ScanParameters& osp,
+                    const ScanParameters& wsp,
+                    const tf::Vector3& lv,
+                    const double dt, 
+                    const int    loop_frequency,
+                //! handle_missed_wall parameters
+                    //! Parameters for drone rotation
+                    const double ang_tol, 
+                    const double ang_vel, 
+                    const int    rot_frequency,
+                    //! Parameters for drone translation after PID failure
+                    const double lin_vel,
+                    const double wd_tol,
+                    const int freq);
+  static double min_distance(const sensor_msgs::LaserScan& laser_msg,
+                             double min_scan_angle, 
+                             double max_scan_angle);
 };
