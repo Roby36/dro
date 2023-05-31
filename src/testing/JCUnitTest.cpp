@@ -21,9 +21,20 @@ int main(int argc, char** argv)
     // Initialize velocity publisher handler
     PubHandler <geometry_msgs::TwistStamped> vel_ph (&nh, ::cmd_vel_topic);
     // Initialize PID controller
-    PID pid_ctr ( PIDparams(0.0, 2.0, 0.0, 3.0, -1));
+    PID pid_ctr ( PIDparams(0.0, 0.0, 0.0, 0.0, -1));
     // Initialize velocity controller
-    VelController vel_ctr (&vel_ph, &laser_sh, &odom_sh, &pid_ctr);
+    VelController vel_ctr (&vel_ph, 
+                           &laser_sh, 
+                           &odom_sh, 
+                           &pid_ctr,
+                           tf::Vector3(0.5, 0.0, 0.0),    // linear_velocity
+                           tf::Vector3(0.5, 0.5, 0.5),    // point_tol
+                           0.5,          // angular_velocity
+                           0.1,          // ang_tol     
+                           ScanParameters(0.0,       M_PI/2.0, 2.0), // osp
+                           ScanParameters(-M_PI/2.0, 3.0,      8.0), // wsp
+                           100 //loop_frequency
+                        );
     // Finally, initialize JController
     JController* JController = new ::JController(&vel_ph, &laser_sh, &vel_ctr,
                                                  tf::Vector3(1.0f, 1.0f, 1.0f),
