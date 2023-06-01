@@ -35,6 +35,7 @@ JController::handleCommand(char cmd)
         case Keypress::NAVTEST:   navtest();               break;
         case Keypress::BUG2TEST:  bug2test();              break;
         case Keypress::ZNTEST:    ZNtest();                break;
+        case Keypress::TWISTTEST: twist_test(1.0, 1.0);    break;
         // Reproduce bugs here by hard-coding internal VelController functions
         case Keypress::ROTATE:    rotateYaw(3.73,
                                             0.1,
@@ -142,6 +143,12 @@ void JController::ZNtest()
                             0.1,  // dt
                             0.2  // side_vel
                             ); 
+}
+
+void JController::twist_test(const double linear_vel,
+                             const double ang_vel)
+{
+    vel_ctr->twist_test(linear_vel, ang_vel);
 }
 
 void JController::rotateYaw(const double input_yaw, 

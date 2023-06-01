@@ -30,7 +30,7 @@ typedef struct SP {
 class VelController
 {
   //** General navigation parameters **//
-  const tf::Vector3    linear_velocity;
+  const double         linear_speed;
   const tf::Vector3    point_tol; // tolerance used when reaching points
   const double         angular_velocity; // we will only use the z (yaw) rotational dof
   const double         ang_tol; // tolerance used when rotating
@@ -68,7 +68,7 @@ class VelController
                 SubHandler <nav_msgs::Odometry>          * const odom_sh,
                 PID* pid_ctr,
               //! Navigation parameters
-                const tf::Vector3    linear_velocity,
+                const double         linear_speed,
                 const tf::Vector3    point_tol,
                 const double         angular_velocity,
                 const double         ang_tol,
@@ -165,8 +165,16 @@ class VelController
                       const double dt, 
                       const double side_vel);
 
-  // Should be private, but here for testing
-  //** We only use the yaw rotational degree of freedom, hence no vector inputs **//
+  /* twist_test()
+  * This is a test to make the drone change its orientation with respect to
+  * the map fixed frame, whilst maintaining a constant velocity with respect 
+  * to the map fixed frame. The linear components of the twist command are 
+  * changed to account for the angular velocity command, using SHM equations
+  * */
+  void twist_test( const double linear_vel,
+                   const double ang_vel);
+
+  // Should be private, but here for testing purposes
   void rotateYaw( const double input_yaw, 
                   const double tol, 
                   const double ang_vel,  

@@ -7,7 +7,7 @@ VelController::VelController(PubHandler <geometry_msgs::TwistStamped> * const ve
                             SubHandler <nav_msgs::Odometry>          * const odom_sh,
                             PID* pid_ctr,
                             //! Navigation parameters
-                            const tf::Vector3    linear_velocity,
+                            const double         linear_speed,
                             const tf::Vector3    point_tol,
                             const double         angular_velocity,
                             const double         ang_tol,
@@ -22,7 +22,7 @@ VelController::VelController(PubHandler <geometry_msgs::TwistStamped> * const ve
                                 :   working_frame_id(working_frame_id),
                                     output_vel_frame_id(output_vel_frame_id),
                                     input_laser_frame_id(input_laser_frame_id),
-                                    linear_velocity(linear_velocity),
+                                    linear_speed(linear_speed),
                                     point_tol(point_tol),
                                     angular_velocity(angular_velocity),
                                     ang_tol(ang_tol),
@@ -135,7 +135,7 @@ void VelController::follow_wall(const double dt,
     // Let the drone move throughout the given time step
     while (ros::ok() && ((ros::Time::now() < startTime + loopDuration))) {
         // As soon as obstacle check fails, handle close wall and break loop 
-        if (!omnidirectional_obstacle_check(linear_velocity, pid_av, working_frame_id, 
+        if (!omnidirectional_obstacle_check(tf::Vector3(linear_speed, 0.0, 0.0), pid_av, working_frame_id, 
                                             laser_sh->currMsg(), cmd_vel_msg))
         {
             pid_success = false; // Flag PID failure
@@ -200,7 +200,8 @@ bool VelController::Bug2( const std::string& goal_frame_id,
         update_position_vector(curr_pos);
         laser_sh->update_msg();
         // If no obstacle, move towards goal and continue loop
-        if (omnidirectional_obstacle_check(linear_velocity, tf::Vector3(0.0, 0.0, 0.0), 
+        if (omnidirectional_obstacle_check(tf::Vector3(linear_speed, 0.0, 0.0), 
+                                           tf::Vector3(0.0, 0.0, 0.0), 
                     working_frame_id, laser_sh->currMsg(), cmd_vel_msg))
         {
             vel_ph->publish(cmd_vel_msg);
@@ -275,6 +276,32 @@ bool VelController::ZN_tuning_test( std::string  outfile,
     }
     m_logger.logstr("Ending ZN_tuning_test" );
     return success;
+}
+
+void VelController::twist_test(const double linear_vel,
+                               const double ang_vel)
+{
+    geometry_msgs::TwistStamped cmd_vel_msg;
+    sensor_msgs::LaserScan laser_msg;
+    double startTime = ros::Time::now().toSec();
+    ros::Rate rate (loop_frequency);
+    while (ros::ok()) {
+        laser_sh->update_msg();
+        laser_msg = laser_sh->currMsg();
+        double t  = ros::Time::now().toSec() - startTime;
+        // Prepare twist message, using parameters derived from
+        // map->base_link transform and SHM equations
+        omnidirectional_obstacle_check(
+            tf::Vector3(linear_vel *  cos(ang_vel * t),
+                        linear_vel * -sin(ang_vel * t),
+                        0.0),
+            tf::Vector3(0.0, 0.0, ang_vel),
+            working_frame_id, // use base_link as input frame
+            laser_msg,
+            cmd_vel_msg);
+        vel_ph->publish(cmd_vel_msg);
+        rate.sleep();
+    }
 }
 
 bool VelController::get_closest_obstacle_position(tf::Vector3& obst_pos,

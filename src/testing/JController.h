@@ -39,6 +39,7 @@ enum Keypress {
     PIDTEST   = 'P',
     ROTATE    = 'R',
     ZNTEST    = 'Z',
+    TWISTTEST = 'W',
 
     QUIT      = 'q'
 };
@@ -99,5 +100,6 @@ class JController
                     const double tol, 
                     const double ang_vel,  
                     int frequency);
-
+    void twist_test(const double linear_vel,
+                    const double ang_vel);
 };
