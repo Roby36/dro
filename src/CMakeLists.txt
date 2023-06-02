@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.0.2)
 
 project(dro)
 
-add_compile_options(-std=c++11 -DPIDLOG -DOBSTLOG -DNAVLOUT -DNAVLFILE -I./net/client -I./net/server -I./net/common )
+add_compile_options(-std=c++11 -DPIDLOG -DNAVLOUT -DNAVLFILE -I./net/client -I./net/server -I./net/common )
 
 find_package(catkin REQUIRED COMPONENTS roscpp geometry_msgs mavros_msgs nav_msgs tf)
 

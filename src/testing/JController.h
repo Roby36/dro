@@ -94,12 +94,16 @@ class JController
 
     /* Navigation tests (hard-coded) */
     void navtest();
+    void navtest2();
     void bug2test();
     void ZNtest();
     void rotateYaw( const double input_yaw, 
                     const double tol, 
                     const double ang_vel,  
                     int frequency);
-    void twist_test(const double linear_vel,
-                    const double ang_vel);
+    void rotate_in_line( const tf::Vector3& linear_vel,
+                         const std::string& input_vel_frame_id,
+                         const double ang_vel,
+                         const double exec_time);
+
 };
