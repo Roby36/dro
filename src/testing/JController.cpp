@@ -22,7 +22,7 @@ JController::handleCommand(char cmd)
     tf::Vector3 l_vel (0, 0, 0);
     tf::Vector3 a_vel (0, 0, 0);
     switch (cmd) {
-        // Movement commands
+        // Movement commands (wrt input_vel_frame_id)
         case Keypress::UP:        l_vel.setZ(  lv.getZ()); break;
         case Keypress::DOWN:      l_vel.setZ( -lv.getZ()); break;
         case Keypress::CW:        a_vel.setZ( -av.getZ()); break;
@@ -32,9 +32,11 @@ JController::handleCommand(char cmd)
         case Keypress::RIGHT:     l_vel.setY( -lv.getY()); break;
         case Keypress::LEFT:      l_vel.setY(  lv.getY()); break;
         // Navigation tests
-        case Keypress::NAVTEST:   navtest();               break;
+        case Keypress::NAVTEST:   navtest2();              break;
         case Keypress::BUG2TEST:  bug2test();              break;
         case Keypress::ZNTEST:    ZNtest();                break;
+        case Keypress::TWISTTEST: rotate_in_line(tf::Vector3(-0.1, -0.1, 0.1),
+                    "/odom", 0.1, 10.0);                  break;
         // Reproduce bugs here by hard-coding internal VelController functions
         case Keypress::ROTATE:    rotateYaw(3.73,
                                             0.1,
@@ -98,9 +100,37 @@ void JController::navtest()
     // Hard-coded navigation test for the VelController module (using ZN tuned parameters)
     vel_ctr->reset_PID( PIDparams(0.0, 0.0072, 0.0002, 0.0675, -1));
     while (ros::ok()) {
-        vel_ctr->follow_wall(0.1, 0.2);
+        vel_ctr->follow_wall(0.1, 0.2, 0.0, 0.0);
     }
     ROS_INFO_STREAM("Ending navtest");
+}
+
+void JController::navtest2()
+{
+    /* Before running this test, make sure vel_ctr is initialized as follows
+    * in JCUnitTest.cpp
+
+    VelController vel_ctr ( &vel_ph, 
+                            &laser_sh, 
+                            &odom_sh, 
+                            &pid_ctr,
+                            0.5,    // linear_speed
+                            tf::Vector3(0.5, 0.5, 0.5),    // point_tol
+                            0.5,          // angular_velocity
+                            0.1,          // ang_tol     
+                            ScanParameters(-M_PI/2.0, M_PI/2.0, 2.0), // osp
+                            ScanParameters(-M_PI,     3.0,      8.0), // wsp
+                            1000 //loop_frequency
+                        );
+
+    */
+    
+   ROS_INFO_STREAM("Starting navtest2");
+    vel_ctr->reset_PID( PIDparams(0.0, 0.1, 0.0, 0.1, -1));
+    while (ros::ok()) {
+        vel_ctr->follow_wall(1.0, 0.5, M_PI/2.0, 0.0);
+    }
+    ROS_INFO_STREAM("Ending navtest2");
 }
 
 void JController::bug2test()
@@ -133,6 +163,7 @@ void JController::bug2test()
 
 void JController::ZNtest()
 {
+    /* Function needs updating
     vel_ctr-> ZN_tuning_test("ZN_test.txt",
                             0.01,
                             0.10,
@@ -142,6 +173,15 @@ void JController::ZNtest()
                             0.1,  // dt
                             0.2  // side_vel
                             ); 
+    */
+}
+
+void JController::rotate_in_line( const tf::Vector3& linear_vel,
+                                  const std::string& input_vel_frame_id,
+                                  const double ang_vel,
+                                  const double exec_time)
+{
+    vel_ctr->rotate_in_line(linear_vel, input_vel_frame_id, ang_vel, exec_time);
 }
 
 void JController::rotateYaw(const double input_yaw, 

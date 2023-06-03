@@ -30,7 +30,7 @@ typedef struct SP {
 class VelController
 {
   //** General navigation parameters **//
-  const tf::Vector3    linear_velocity;
+  const double         linear_speed;
   const tf::Vector3    point_tol; // tolerance used when reaching points
   const double         angular_velocity; // we will only use the z (yaw) rotational dof
   const double         ang_tol; // tolerance used when rotating
@@ -68,7 +68,7 @@ class VelController
                 SubHandler <nav_msgs::Odometry>          * const odom_sh,
                 PID* pid_ctr,
               //! Navigation parameters
-                const tf::Vector3    linear_velocity,
+                const double         linear_speed,
                 const tf::Vector3    point_tol,
                 const double         angular_velocity,
                 const double         ang_tol,
@@ -116,7 +116,8 @@ class VelController
                                       const tf::Vector3& av, 
                                       const std::string& input_vel_frame_id,
                                       const sensor_msgs::LaserScan& laser_msg,
-                                            geometry_msgs::TwistStamped& cmd_vel_msg);
+                                            geometry_msgs::TwistStamped& cmd_vel_msg,
+                                      bool unchecked = false);
 
   /** ALGORITHM: follow_wall()
   * 
@@ -132,6 +133,10 @@ class VelController
   void follow_wall( const double dt, 
                 //! Drone translation after PID failure
                     const double side_vel,
+                //! Angle between velocity vector and drone's yaw
+                    const double orbit_angle,
+                //! Rate of altitude gain
+                    const double climb_angle,
                 //! Optional parameter to assess pid success/ failure
                     bool& pid_success);
   
@@ -145,7 +150,9 @@ class VelController
               const PIDparams& pid_params,
         //! Parameters for follow_wall phase
               const double dt, 
-              const double side_vel);
+              const double side_vel,
+              const double orbit_angle,
+              const double climb_angle);
   
   //** Reset internal PID controller **//
   void reset_PID( const PIDparams nparams);
@@ -163,10 +170,32 @@ class VelController
                       const double time_goal,
                     //! Parameters for follow_wall()
                       const double dt, 
-                      const double side_vel);
+                      const double side_vel,
+                      const double orbit_angle,
+                      const double climb_angle);
+  
+  /* rotate_in_line()
+  * This function rotates the drone around itself whilst following a constant 
+  * 3-D linear path with respect to a fixed global reference frame
+  * 
+  *  INPUTS:
+  *   - linear velocity vector (in the fixed global frame) the drone has to follow
+  *   - angular velocity at which we want the drone to rotate around itself,
+  *     with respect to base_link
+  *   - execution time, after which the function returns
+  * 
+  *  OUTUTS:
+  *   - the function translates the commands in the base-link reference frame,
+  *     publishes the relevant velocity messages, and returns after the time limit.
+  *     The z-component of linear velocity will remain constant throughout execution
+  * */
+  void rotate_in_line( const tf::Vector3& linear_vel,
+                       const std::string& input_vel_frame_id,
+                       const double ang_vel,
+                       const double exec_time);
 
-  // Should be private, but here for testing
-  //** We only use the yaw rotational degree of freedom, hence no vector inputs **//
+
+  // Should be private, but here for testing purposes
   void rotateYaw( const double input_yaw, 
                   const double tol, 
                   const double ang_vel,  
@@ -175,13 +204,21 @@ class VelController
   private:
 
   //** Private helper-function used internally by the module **//
-
+  //** Obstacle-handling **//
+  double get_wall_tangential_angle(const tf::Vector3& obst_pos,
+                                   const std::string& obst_frame_id);
   bool get_closest_obstacle_position(tf::Vector3& obst_pos,
-                                     std::string& obst_frame_id);
+                                     std::string& obst_frame_id,
+                                    //! Redundancy parameters
+                                     bool redundant = false,
+                                     int  num_calls = 1,
+                                     int sleep_ms  = 500000 /* half a second */);
   bool handle_missed_wall(const tf::Vector3& obst_pos,
                           const std::string& obst_frame_id,
                         //! Drone translation after PID failure
-                          const double side_vel);
+                          const double side_vel,
+                          const double orbit_angle,
+                          const bool final_rot_adjustment = false);
   //** Message-processing functions (from subscribers) **//
   static inline void ranges_indices(const sensor_msgs::LaserScan& laser_msg,
                                     const double min_scan_angle,
@@ -216,14 +253,19 @@ class VelController
                                const tf::Vector3& curr_pos,
                                const tf::Vector3& tol);
   void inline update_position_vector( tf::Vector3& v);
-  static inline double xy_distance( tf::Vector3& v1, tf::Vector3& v2);
+  static inline double xy_distance ( const tf::Vector3& v1, 
+                                     const tf::Vector3& v2);
+  static inline double xyz_distance( const tf::Vector3& v1, 
+                                     const tf::Vector3& v2);
   //** Motion functions (publishing) **//
   void stop();
 
   public:
   //** Overloaded copies (to make reference parameters optional) **//
-  void follow_wall( const double dt, 
-                    const double side_vel);
+  void follow_wall( const double dt,
+                    const double side_vel,
+                    const double orbit_angle,
+                    const double climb_angle);
   static double min_distance(const sensor_msgs::LaserScan& laser_msg,
                              double min_scan_angle, 
                              double max_scan_angle);
