@@ -22,6 +22,8 @@ JController::handleCommand(char cmd)
     tf::Vector3 l_vel (0, 0, 0);
     tf::Vector3 a_vel (0, 0, 0);
     switch (cmd) {
+        /** TODO: service commands */
+
         // Movement commands (wrt input_vel_frame_id)
         case Keypress::UP:        l_vel.setZ(  lv.getZ()); break;
         case Keypress::DOWN:      l_vel.setZ( -lv.getZ()); break;
@@ -107,7 +109,7 @@ void JController::navtest()
 
 void JController::navtest2()
 {
-    /* Before running this test, make sure vel_ctr is initialized as follows
+    /* Before running this test, make sure vel_ctr is initialized appropriately
     * in JCUnitTest.cpp
 
     VelController vel_ctr ( &vel_ph, 
@@ -125,10 +127,29 @@ void JController::navtest2()
 
     */
     
-   ROS_INFO_STREAM("Starting navtest2");
+    ROS_INFO_STREAM("Starting navtest2");
     vel_ctr->reset_PID( PIDparams(0.0, 0.1, 0.0, 0.1, -1));
+    // Declare all function paramters
+    tf::Vector3 obst_pos;
+    std::string obst_frame_id;
+    double dt          = 1.0;
+    double side_vel    = 0.5;
+    double orbit_angle = M_PI/4.0;
+    double climb_angle = 0.0;
     while (ros::ok()) {
-        vel_ctr->follow_wall(1.0, 0.5, M_PI/2.0, 0.0);
+        // Flag variables for error handling (reset on each loop iteration)
+        bool wall_contact   = true;
+        bool close_obstacle = false;
+        vel_ctr->follow_wall(dt, side_vel, orbit_angle, climb_angle,
+                            wall_contact, close_obstacle);
+        // Handle errors (from OUTSIDE follow_wall!)
+        if (!wall_contact) {
+            vel_ctr->handle_lost_wall_contact(obst_pos, obst_frame_id);
+            vel_ctr->handle_missed_wall(obst_pos, obst_frame_id, side_vel, orbit_angle);
+        } else if (close_obstacle) {
+            vel_ctr->get_closest_obstacle_position(obst_pos, obst_frame_id, true, 2);
+            vel_ctr->handle_missed_wall( obst_pos, obst_frame_id, side_vel, orbit_angle);
+        }
     }
     ROS_INFO_STREAM("Ending navtest2");
 }

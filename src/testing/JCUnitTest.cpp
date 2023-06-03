@@ -31,8 +31,9 @@ int main(int argc, char** argv)
                             tf::Vector3(0.5, 0.5, 0.5),    // point_tol
                             0.5,          // angular_velocity
                             0.1,          // ang_tol     
-                            ScanParameters(-M_PI/2.0, M_PI/4.0, 2.0), // osp
-                            ScanParameters(-M_PI,     3.0,      5.0), // wsp
+                            // set-up for orbiting angle of M_PI/4.0
+                            ScanParameters( -M_PI/4.0, M_PI/8.0, 2.0), // osp
+                            ScanParameters( -3*M_PI/4.0, 3.0,    5.0), // wsp
                             1000 //loop_frequency
                         );
     // Finally, initialize JController

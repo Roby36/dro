@@ -34,8 +34,8 @@ class VelController
   const tf::Vector3    point_tol; // tolerance used when reaching points
   const double         angular_velocity; // we will only use the z (yaw) rotational dof
   const double         ang_tol; // tolerance used when rotating
-  const ScanParameters osp; // obstacles
-  const ScanParameters wsp; // walls
+  ScanParameters osp; // obstacles
+  ScanParameters wsp; // walls
   const int            loop_frequency; // frequency at which cmd_vel messages published
 
   /** Logging **/
@@ -130,15 +130,16 @@ class VelController
   *   This will be important since Bug2 & Bug3 are built directly on top
   *   of this algorithm.
   */
-  void follow_wall( const double dt, 
+  bool follow_wall( const double dt, 
                 //! Drone translation after PID failure
                     const double side_vel,
                 //! Angle between velocity vector and drone's yaw
                     const double orbit_angle,
                 //! Rate of altitude gain
                     const double climb_angle,
-                //! Optional parameter to assess pid success/ failure
-                    bool& pid_success);
+                //! Optional flag(s), signalling problems
+                    bool& wall_contact,
+                    bool& close_obstacle);
   
   /** ALGORITHM: Bug2 
   *   This algorithm uses the two algorithms above, and parameters in 
@@ -201,9 +202,9 @@ class VelController
                   const double ang_vel,  
                   int frequency);
 
-  private:
 
-  //** Private helper-function used internally by the module **//
+  //** Helper-function used internally by the module **//
+  //!! PUBLIC FOR THE SAKE OF TESTING
   //** Obstacle-handling **//
   double get_wall_tangential_angle(const tf::Vector3& obst_pos,
                                    const std::string& obst_frame_id);
@@ -213,6 +214,8 @@ class VelController
                                      bool redundant = false,
                                      int  num_calls = 1,
                                      int sleep_ms  = 500000 /* half a second */);
+  void handle_lost_wall_contact(tf::Vector3& obst_pos,
+                                std::string& obst_frame_id);
   bool handle_missed_wall(const tf::Vector3& obst_pos,
                           const std::string& obst_frame_id,
                         //! Drone translation after PID failure
@@ -262,11 +265,13 @@ class VelController
 
   public:
   //** Overloaded copies (to make reference parameters optional) **//
-  void follow_wall( const double dt,
+  bool follow_wall( const double dt,
                     const double side_vel,
                     const double orbit_angle,
                     const double climb_angle);
   static double min_distance(const sensor_msgs::LaserScan& laser_msg,
                              double min_scan_angle, 
                              double max_scan_angle);
+
+
 };
