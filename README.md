@@ -11,8 +11,25 @@ The source files are written in C++ and divided into submodules. The submodules 
 ## Building
 - Install <a href=https://ardupilot.org/dev/docs/building-setup-linux.html>Ardupilot</a> following the instructions on the website. We cloned it into a directory called `~/ardupilot-ws/src`.
 - Install <a href=https://ardupilot.org/dev/docs/ros-install.html#installing-mavros>Mavros</a> following the instructions on the website. *Note: the instructions are for Ubuntu Noetic, but we use Melodic*
-- Clone this reposiory into `~/ardupilot-ws/src`
-- Here is the configuration used for Mavros/Ardupilot, which is output to the console on launch:
+- Clone this reposiory into `~/catkin_ws/ardupilot-ws/src`
+- Run `catkin_make` in the `~/catkin_ws/ardupilot-ws/src/dro` directory
+    - Install dependencies as needed
+- In `~/.bashrc`, add the following PATH variables:
+    ```bash
+    PATH=$PATH:$HOME/catkin_ws/ardupilot_ws/src/ardupilot/Tools/autotest
+    PATH=/usr/lib/ccache:$PATH
+    PATH="$PATH:$HOME/.local/bin"
+    PATH="$PATH:$HOME/.local/bin"
+    GZ_SIM_SYSTEM_PLUGIN_PATH=$HOME/gz_ws/src/ardupilot_gazebo/build:${GZ_SIM_SYSTEM_PLUGIN_PATH}
+    GZ_SIM_RESOURCE_PATH=$HOME/gz_ws/src/ardupilot_gazebo/models:$HOME/gz_ws/src/ardupilot_gazebo/worlds:${GZ_SIM_RESOURCE_PATH}
+    source /usr/share/gazebo/setup.sh
+    GAZEBO_MODEL_PATH=~/ardupilot_gazebo/models
+    GAZEBO_RESOURCE_PATH=~/ardupilot_gazebo/worlds:${GAZEBO_RESOURCE_PATH}
+    ```
+    - This allows you to run `sim_vehicle.py` from anywhere
+- Run `pip install --upgrade pymavlink MAVProxy --user` to install the latest versions of pymavlink and MAVProxy. Run the command again with `pip3`
+- Run `sudo /opt/ros/melodic/lib/mavros/install_geographiclib_datasets.sh` to install the geographiclib datasets for mavros
+- Here is the configuration used for Mavros/Ardupilot, which is output to the console upon running the command in step 2 below (see `Running`):
 
 ```{yaml}
 root@ef76806eeb25:~/catkin_ws/ardupilot_ws/src/ardupilot# cd ~/catkin_ws/ardupilot_ws/src/ardupilot && sim_vehicle.py -v ArduCopter -f gazebo-iris --map --console
@@ -69,22 +86,46 @@ Checking for program 'rsync'                   : not found
 ## Running
 
 Before running the ROS nodes, execute the following commands:
-0. Source the ROS workspace and export Python3
+1. Source the ROS workspace and export Python3
     ```bash
-    source ~/catkin_ws/devel/setup.bash && export PYTHON=/usr/bin/python3
+    cd ~/catkin_ws/ardupilot_ws/src/dro
+    source devel/setup.bash && export PYTHON=/usr/bin/python3
     ```
-1. Start an SITL copter session (from the appropriate directory)
+2. Start an SITL copter session (from the appropriate directory)
     ```bash
-    cd ~/catkin_ws/ardupilot_ws/src/ardupilot && sim_vehicle.py -v ArduCopter -f gazebo-iris --map --console
+    cd ~/catkin_ws/ardupilot_ws/src/ardupilot && sim_vehicle.py -v ArduCopter -f gazebo-iris --map --console -D -G
     ```
-2. Start Gazebo with laser scan:
+3. In a new terminal, start Gazebo with laser scan:
     ```bash
     cd ~/catkin_ws/ardupilot_ws/src/ardupilot_gazebo/build && make install && source /usr/share/gazebo/setup.sh && roslaunch gazebo_ros empty_world.launch world_name:=worlds/iris_arducopter_runway.world verbose:=true
     ```
-3. Launch mavros (from appropriate directory) by running:
+4. Launch mavros by running:
     ```bash
     cd ~/catkin_ws/ardupilot_ws/src/ardupilot && roslaunch mavros apm.launch
     ```
+5. Launch JController.launch by running:
+    ```bash
+    cd ~/catkin_ws/ardupilot_ws/src/dro/launch && roslaunch JController.launch
+    ```
+
+You can now use the following commands to control the drone (defined in JController.h):
+- up = 'e'
+- down = 'x'
+- cw = 'd'
+- ccw = 's'
+- forwards = 'i'
+- backwards = 'm'
+- right = 'k'
+- left = 'j'
+- navtest = 'n'
+- bug2test = 'b'
+- pidtest = 'p'
+- rotate = 'r'
+- zntest = 'z'
+- twisttest = 'w'
+- quit = 'q'
+
+
 
 ## Known issues and limitations
 - Gazebo is very finicky, and sometimes must be restarted. If the drone fails to launch, a reset might be in order.

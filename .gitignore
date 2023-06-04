@@ -4,3 +4,4 @@ devel/
 logs/
 graphs/input
 src/net/net.a
+.vscode/c_cpp_properties.json
