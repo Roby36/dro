@@ -74,14 +74,14 @@ bool VelController::omnidirectional_obstacle_check(const tf::Vector3& lv,
     // Compute the minimum distance in the given angular range
     double min_scan_angle = dir_ang - (osp.ang_range / 2.0);
     double max_scan_angle = dir_ang + (osp.ang_range / 2.0);
-    double min_distance = min_distance(laser_msg, min_scan_angle, max_scan_angle);
+    double min_dist = min_distance(laser_msg, min_scan_angle, max_scan_angle);
     // If requested with the unchecked parameter, each linear velocity command goes through
-    if ((min_distance < osp.distance) && !unchecked) {
+    if ((min_dist < osp.distance) && !unchecked) {
         #ifdef OBSTLOG
         m_logger.logstr(std::string("omnidirectional_obstacle_check: ") + 
                         std::string("Obstacle detected within thresh_distance ") +
                         std::to_string(osp.distance) + std::string("at distance ") +
-                        std::to_string(min_distance) + std::string("\n"));
+                        std::to_string(min_dist)     + std::string("\n"));
         #endif //OBSTLOG
         return false;
     }
