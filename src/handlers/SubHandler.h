@@ -4,6 +4,7 @@
 #include <ros/ros.h>
 #include <nav_msgs/Odometry.h>
 #include <sensor_msgs/LaserScan.h>
+#include <sensor_msgs/Range.h>
 
 // Common C/C++ inclusions (to be placed in shared file between modules)
 #include <cstdlib>
