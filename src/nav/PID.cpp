@@ -15,6 +15,15 @@ PP::PP( unit_t K,
 {
 }
 
+std::string PP::toString()
+{
+    return (std::string("(K, Kp, Ki, Kd) = ") + std::string("( ") +
+            std::to_string(K) + std::string(", ") +
+            std::to_string(Kp) + std::string(", ") +
+            std::to_string(Ki) + std::string(", ") +
+            std::to_string(Kd) + std::string(") "));
+}
+
 PID::PID( const PIDparams params, 
           const std::string logpath )
             : params(params.K, params.Kp, params.Ki, params.Kd, params.err_sum_terms),

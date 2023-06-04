@@ -35,7 +35,7 @@ JController::handleCommand(char cmd)
         case Keypress::LEFT:      l_vel.setY(  lv.getY()); break;
         // Navigation tests
         case Keypress::NAVTEST:   navtest2();              break;
-        case Keypress::BUG2TEST:  bug2test();              break;
+        case Keypress::BUG3TEST:  bug3test();              break;
         case Keypress::ZNTEST:    ZNtest();                break;
         case Keypress::TWISTTEST: rotate_in_line(tf::Vector3(-0.1, -0.1, 0.1),
                     "/odom", 0.1, 10.0);                  break;
@@ -102,32 +102,17 @@ void JController::navtest()
     // Hard-coded navigation test for the VelController module (using ZN tuned parameters)
     vel_ctr->reset_PID( PIDparams(0.0, 0.0072, 0.0002, 0.0675, -1));
     while (ros::ok()) {
-        vel_ctr->follow_wall(0.1, 0.2, 0.0, 0.0);
+        vel_ctr->follow_wall(0.1, 0.0, 0.0);
     }
     ROS_INFO_STREAM("Ending navtest");
 }
 
-void JController::navtest2()
+void JController::navtest2(double dur)
 {
-    /* Before running this test, make sure vel_ctr is initialized appropriately
-    * in JCUnitTest.cpp
+    /* Before running this test, make sure vel_ctr is initialized appropriately in JCUnitTest.cpp */
 
-    VelController vel_ctr ( &vel_ph, 
-                            &laser_sh, 
-                            &odom_sh, 
-                            &pid_ctr,
-                            0.5,    // linear_speed
-                            tf::Vector3(0.5, 0.5, 0.5),    // point_tol
-                            0.5,          // angular_velocity
-                            0.1,          // ang_tol     
-                            ScanParameters(-M_PI/2.0, M_PI/2.0, 2.0), // osp
-                            ScanParameters(-M_PI,     3.0,      8.0), // wsp
-                            1000 //loop_frequency
-                        );
-
-    */
-    
     ROS_INFO_STREAM("Starting navtest2");
+    // Reset PID to appropriate values
     vel_ctr->reset_PID( PIDparams(0.0, 0.1, 0.0, 0.1, -1));
     // Declare all function paramters
     tf::Vector3 obst_pos;
@@ -136,50 +121,46 @@ void JController::navtest2()
     double side_vel    = 0.5;
     double orbit_angle = M_PI/4.0;
     double climb_angle = 0.0;
-    while (ros::ok()) {
+    // Time loop duration
+    ros::Time startTime = ros::Time::now();
+    ros::Duration loopDuration (dur);
+    while (ros::ok() && (ros::Time::now() < startTime + loopDuration)) {
         // Flag variables for error handling (reset on each loop iteration)
         bool wall_contact   = true;
         bool close_obstacle = false;
-        vel_ctr->follow_wall(dt, side_vel, orbit_angle, climb_angle,
+        vel_ctr->follow_wall(dt, orbit_angle, climb_angle,
                             wall_contact, close_obstacle);
         // Handle errors (from OUTSIDE follow_wall!)
         if (!wall_contact) {
             vel_ctr->handle_lost_wall_contact(obst_pos, obst_frame_id);
             vel_ctr->handle_missed_wall(obst_pos, obst_frame_id, side_vel, orbit_angle);
         } else if (close_obstacle) {
-            vel_ctr->get_closest_obstacle_position(obst_pos, obst_frame_id, true, 2);
-            vel_ctr->handle_missed_wall( obst_pos, obst_frame_id, side_vel, orbit_angle);
+            vel_ctr->get_closest_obstacle_position(obst_pos, obst_frame_id);
+            vel_ctr->handle_missed_wall(obst_pos, obst_frame_id, side_vel, orbit_angle);
         }
     }
     ROS_INFO_STREAM("Ending navtest2");
 }
 
-void JController::bug2test()
+void JController::bug3test()
 {
-    /* Function needs updating
+    ROS_INFO_STREAM("Starting bug3test");
+    vel_ctr->Bug3( "/map",
+                    tf::Vector3(20.0, 20.0, 20.0), 
+                //! Altitude ABOVE GROUND bounds
+                    2.0,
+                    10.0,
+                //! Function determining climb angle when travelling around obstacle
+                    vel_ctr->lin_ang_pol,  
+                //! Parameters for PID
+                    PIDparams(0.0, 0.1, 0.0, 0.1, -1),
+                    PIDparams(0.0, 0.1, 0.0, 0.1, -1),
+                //! Parameters for follow_wall phase
+                    1.0, 
+                    0.2,
+                    0.0);
+    ROS_INFO_STREAM("Ending bug3test");
 
-    ROS_INFO_STREAM("Starting bug2test");
-    vel_ctr->Bug2("map", // goal_frame_id
-                  tf::Vector3(20.0, 20.0, 20.0), // goal_point
-                  tf::Vector3(1.0, 1.0, 1.0), // goal_tol
-                  tf::Vector3(0.5, 0.0, 0.0), // linear_velocity
-                  0.5, // angular_velocity
-                  0.2, // ang_tol
-                  tf::Vector3(1.0, 1.0, 1.0), // line_tol
-                  PIDparams(0.0, 0.2, 0.0, 0.2, -1), // pid_params
-                  ScanParameters(0.0, M_PI/4.0, 4.0), // osp
-                  ScanParameters(-M_PI/2.0, 3.0, 3.0), // wsp
-                  tf::Vector3(0.5, 0.0, 0.0), // lv
-                  tf::Vector3(0.0, 0.0, 0.5), // av
-                  0.1, // dt
-                  100, // loop_frequency
-                  M_PI/8.0, // obst_ang_range
-                  3.0, // obst_thresh_distance
-                  100 // frequency
-                  ); 
-    ROS_INFO_STREAM("Ending bug2test");
-
-    */
 }
 
 void JController::ZNtest()

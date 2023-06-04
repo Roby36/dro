@@ -44,12 +44,14 @@ class VelController
   /** Velocity publisher handler (initialized outside) **/
   PubHandler <geometry_msgs::TwistStamped> * const vel_ph;
 
-  /** Laser & Odometry subscriber handlers (initialized outside) **/
+  /** Laser, Odometry, rangefinder subscriber handlers (initialized outside) **/
   SubHandler <sensor_msgs::LaserScan> * const laser_sh;
   SubHandler <nav_msgs::Odometry>     * const odom_sh;
+  SubHandler <sensor_msgs::Range>     * const range_sh;
 
-  /** PID (initialized at default values above) **/
-  PID* const pid_ctr;
+  /** PID controllers **/
+  PID * const obst_pid; 
+  PID * const  alt_pid;  
 
   //** Transform used to switch between frames and listener **//
   tf::StampedTransform T; 
@@ -66,7 +68,9 @@ class VelController
   VelController(PubHandler <geometry_msgs::TwistStamped> * const vel_ph,
                 SubHandler <sensor_msgs::LaserScan>      * const laser_sh,
                 SubHandler <nav_msgs::Odometry>          * const odom_sh,
-                PID* pid_ctr,
+                SubHandler <sensor_msgs::Range>          * const range_sh,
+                PID *  obst_pid,
+                PID *  alt_pid,
               //! Navigation parameters
                 const double         linear_speed,
                 const tf::Vector3    point_tol,
@@ -131,8 +135,6 @@ class VelController
   *   of this algorithm.
   */
   bool follow_wall( const double dt, 
-                //! Drone translation after PID failure
-                    const double side_vel,
                 //! Angle between velocity vector and drone's yaw
                     const double orbit_angle,
                 //! Rate of altitude gain
@@ -141,22 +143,62 @@ class VelController
                     bool& wall_contact,
                     bool& close_obstacle);
   
-  /** ALGORITHM: Bug2 
+  /** ALGORITHM: Bug2
   *   This algorithm uses the two algorithms above, and parameters in 
   *   PIDsettings, to implement the Bug2 algorithm seen in class 
   */
-  bool Bug2(  const std::string& goal_frame_id,
-              const tf::Vector3& goal_point,    
-        //! Parameters for PID
-              const PIDparams& pid_params,
-        //! Parameters for follow_wall phase
-              const double dt, 
-              const double side_vel,
-              const double orbit_angle,
-              const double climb_angle);
+  bool Bug3( const std::string& goal_frame_id,
+            const tf::Vector3& goal_point, 
+      //! Altitude ABOVE GROUND bounds
+            const double       min_agl,
+            const double       max_agl,
+      //! Function determining climb angle when travelling around obstacle
+            double (*climb_ang_policy) (double, double, double),    
+      //! Parameters for PID
+            const PIDparams& obst_pid_params,
+            const PIDparams& alt_pid_params,
+      //! Parameters for follow_wall phase
+            const double dt, 
+            const double side_vel,
+            const double orbit_angle);
+  
+  void bug3_obstacle_handler( const tf::Vector3& start_odom,
+                            const tf::Vector3& goal_odom, 
+                    //! Altitude ABOVE GROUND bounds
+                            const double       min_agl,
+                            const double       max_agl,
+                    //! Function determining climb angle when travelling around obstacle
+                            double (*climb_ang_policy) (double, double, double),    
+                    //! Parameters for PID
+                            const PIDparams& obst_pid_params,
+                    //! Parameters for follow_wall phase
+                            const double dt, 
+                            const double side_vel,
+                            const double orbit_angle);
+
+  void vertical_vel_check(bool& alt_within_range,
+                        double& vertical_vel,
+                        const double min_agl,
+                        const double max_agl,
+                        const PIDparams& alt_pid_params);
+  
+  /** A simple linear climbing angle policy:
+  * This function returns a climb angle between [-PI/2, PI/2],
+  * corresponding to an altitude value included between [min_agl, max_agl]
+  */
+  static double lin_ang_pol(double alt, double min_agl, double max_agl);
   
   //** Reset internal PID controller **//
   void reset_PID( const PIDparams nparams);
+
+  bool test_wall_pid_params(const PIDparams params,
+                            const double time_goal,
+                            const double dt, 
+                            const double orbit_angle, 
+                            const double climb_angle,
+                      //! Information for handling PID failures
+                            bool& wall_contact,
+                            bool& close_obstacle);
   
   /** ZN_tuning_test
   * This function performs the Ziegler Nichols tuning process dynamically.
@@ -209,13 +251,10 @@ class VelController
   double get_wall_tangential_angle(const tf::Vector3& obst_pos,
                                    const std::string& obst_frame_id);
   bool get_closest_obstacle_position(tf::Vector3& obst_pos,
-                                     std::string& obst_frame_id,
-                                    //! Redundancy parameters
-                                     bool redundant = false,
-                                     int  num_calls = 1,
-                                     int sleep_ms  = 500000 /* half a second */);
-  void handle_lost_wall_contact(tf::Vector3& obst_pos,
-                                std::string& obst_frame_id);
+                                     std::string& obst_frame_id);
+  bool handle_lost_wall_contact(tf::Vector3& obst_pos,
+                                std::string& obst_frame_id,
+                                double dur = 10.0);
   bool handle_missed_wall(const tf::Vector3& obst_pos,
                           const std::string& obst_frame_id,
                         //! Drone translation after PID failure
@@ -231,7 +270,8 @@ class VelController
   static inline void bring2range( const double angle_min,
                                   const double angle_max,
                                   double& angle);
-  static bool is_within_range(const sensor_msgs::LaserScan& laser_msg, const int i);
+  static inline bool is_within_range(const sensor_msgs::LaserScan& laser_msg, const int i);
+  static inline bool is_within_range(const sensor_msgs::Range& range_msg);
   static double min_distance(const sensor_msgs::LaserScan& laser_msg,
                              double min_scan_angle, 
                              double max_scan_angle,
@@ -262,11 +302,13 @@ class VelController
                                      const tf::Vector3& v2);
   //** Motion functions (publishing) **//
   void stop();
+  bool change_alt(double alt_gain, 
+                  double climb_vel, 
+                  double max_dur = 100.0);
 
   public:
   //** Overloaded copies (to make reference parameters optional) **//
   bool follow_wall( const double dt,
-                    const double side_vel,
                     const double orbit_angle,
                     const double climb_angle);
   static double min_distance(const sensor_msgs::LaserScan& laser_msg,

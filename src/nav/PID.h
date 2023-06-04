@@ -26,6 +26,7 @@ typedef struct PP {
     int err_sum_terms;
     // Internal contructor
     PP(unit_t K, unit_t Kp, unit_t Ki, unit_t Kd, int err_sum_terms);
+    std::string toString();
 } PIDparams;
 
 // Main PID class

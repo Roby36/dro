@@ -30,3 +30,4 @@ template <typename T> void SubHandler<T>::update_msg()
 // Initialize explicitly all required classes for compiler
 template class SubHandler <nav_msgs::Odometry>;
 template class SubHandler <sensor_msgs::LaserScan>;
+template class SubHandler <sensor_msgs::Range>;
